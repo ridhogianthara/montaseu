@@ -30,6 +30,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['role'] = $user['role'];
             $_SESSION['job_title'] = $user['job_title'];
 
+            // Landing page menyesuaikan siapa yang login (Admin vs Karyawan)
             if ($user['role'] === 'admin') {
                 header("Location: " . BASE_URL . "/admin/dashboard.php");
             } else {
@@ -37,7 +38,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             exit();
         } else {
-            $error = 'Email atau Password salah. Silakan coba lagi.';
+            $error = 'Email atau Password salah. Silakan periksa kembali.';
         }
     }
 }
@@ -73,51 +74,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
     <?php endif; ?>
 
-    <!-- 2 Main Access Roles (Admin & Karyawan) -->
-    <div class="demo-account-box">
-        <div style="font-weight:700; margin-bottom:6px; color:var(--text-primary); text-align:center;">
-            <i class="fas fa-key"></i> 2 Hak Akses Login Perusahaan:
-        </div>
-        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px;">
-            <button type="button" onclick="fillForm('admin@montaseu.com', 'admin123')" class="btn-gold" style="font-size:0.8rem; padding:8px 4px; justify-content:center;">
-                <i class="fas fa-user-shield"></i> Akses Admin
-            </button>
-            <button type="button" onclick="fillForm('karyawan@montaseu.com', 'user123')" class="btn-secondary" style="font-size:0.8rem; padding:8px 4px; justify-content:center;">
-                <i class="fas fa-user-tie"></i> Akses Karyawan
-            </button>
-        </div>
-        <div style="font-size:0.75rem; color:var(--text-muted); text-align:center; margin-top:8px;">
-            *Klik salah satu tombol di atas untuk menguji login otomatis.
-        </div>
-    </div>
-
     <form method="POST" action="">
         <div class="form-group">
-            <label class="form-label" for="email">Alamat Email Login</label>
-            <input type="email" name="email" id="email" class="form-input" placeholder="contoh@montaseu.com" required value="<?= sanitize($_POST['email'] ?? '') ?>">
+            <label class="form-label" for="email"><i class="fas fa-envelope" style="color:var(--accent-gold);"></i> Alamat Email</label>
+            <input type="email" name="email" id="email" class="form-input" placeholder="Masukkan email Anda" required value="<?= sanitize($_POST['email'] ?? '') ?>">
         </div>
 
         <div class="form-group">
-            <label class="form-label" for="password">Password</label>
+            <label class="form-label" for="password"><i class="fas fa-lock" style="color:var(--accent-gold);"></i> Password</label>
             <input type="password" name="password" id="password" class="form-input" placeholder="Masukkan password Anda" required>
         </div>
 
-        <button type="submit" class="btn-gold" style="width: 100%; margin-top: 0.5rem; font-size:1rem; padding:0.85rem;">
+        <button type="submit" class="btn-gold" style="width: 100%; margin-top: 1rem; font-size: 1rem; padding: 0.85rem;">
             <i class="fas fa-sign-in-alt"></i> MASUK KE PORTAL
         </button>
     </form>
 
-    <div style="text-align: center; margin-top: 1.5rem; font-size: 0.8rem; color: var(--text-muted);">
+    <div style="text-align: center; margin-top: 2rem; font-size: 0.8rem; color: var(--text-muted);">
         Montaseu Studio Interior Attendance System &copy; <?= date('Y') ?>
     </div>
 </div>
-
-<script>
-    function fillForm(email, pass) {
-        document.getElementById('email').value = email;
-        document.getElementById('password').value = pass;
-    }
-</script>
 
 </body>
 </html>
