@@ -1,5 +1,7 @@
 <?php
-require_once __DIR__ . '/../includes/header.php';
+require_once __DIR__ . '/../config/database.php';
+requireAuth();
+
 if (!isEmployee()) {
     header("Location: " . BASE_URL . "/admin/dashboard.php");
     exit();
@@ -23,6 +25,7 @@ if ($todayRecord) {
 
 $message = '';
 $error = '';
+$redirectScript = '';
 
 // Handle Submit Absensi (Clock In or Clock Out)
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -62,7 +65,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         saveClockIn($userId, $today, $photoPath, $lat, $lng, $address, $status, $notes, $locationType);
 
         $message = "Presensi Masuk Berhasil Ditambahkan!";
-        header("Refresh:1; url=" . BASE_URL . "/employee/dashboard.php");
+        $redirectScript = "<script>setTimeout(function(){ window.location.href = '" . BASE_URL . "/employee/dashboard.php'; }, 1000);</script>";
     } elseif ($action === 'clock_out' && $todayRecord) {
         $inTime = new DateTime($todayRecord['clock_in_time']);
         $outTime = new DateTime(date('Y-m-d H:i:s'));
@@ -72,9 +75,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         saveClockOut($todayRecord['id'], $photoPath, $lat, $lng, $address, $notes, $durationStr);
 
         $message = "Presensi Pulang Berhasil Ditambahkan!";
-        header("Refresh:1; url=" . BASE_URL . "/employee/dashboard.php");
+        $redirectScript = "<script>setTimeout(function(){ window.location.href = '" . BASE_URL . "/employee/dashboard.php'; }, 1000);</script>";
     }
 }
+
+require_once __DIR__ . '/../includes/header.php';
 ?>
 
 <div style="margin-bottom: 1.5rem;">
@@ -88,6 +93,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div style="background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); color: var(--accent-emerald); padding: 1rem; border-radius: var(--radius-sm); font-weight:700; margin-bottom: 1.5rem; text-align: center;">
         <i class="fas fa-check-circle"></i> <?= $message ?> Mengalihkan...
     </div>
+    <?= $redirectScript ?>
 <?php endif; ?>
 
 <?php if ($mode === 'completed'): ?>
