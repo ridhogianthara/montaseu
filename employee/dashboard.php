@@ -46,11 +46,16 @@ $settings = getSettings();
                 <i class="fas fa-briefcase" style="color:var(--accent-gold);"></i> <?= sanitize($_SESSION['job_title'] ?? 'Karyawan Studio') ?> | Montaseu Studio Interior Design
             </p>
         </div>
-        <div class="card-studio" style="padding: 0.75rem 1.25rem; display:flex; align-items:center; gap:12px; border-color:var(--border-gold);">
-            <i class="fas fa-clock" style="font-size: 1.5rem; color: var(--accent-gold);"></i>
-            <div>
-                <div id="live-clock" style="font-size: 1.1rem; font-weight: 800; color: var(--text-primary);">--:--:--</div>
-                <div id="live-date" style="font-size: 0.75rem; color: var(--text-muted);">--</div>
+        <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+            <a href="<?= BASE_URL ?>/employee/password.php" class="btn-secondary" style="font-size:0.85rem; padding:0.75rem 1rem;">
+                <i class="fas fa-key" style="color:var(--accent-gold);"></i> Ganti Password
+            </a>
+            <div class="card-studio" style="padding: 0.75rem 1.25rem; display:flex; align-items:center; gap:12px; border-color:var(--border-gold);">
+                <i class="fas fa-clock" style="font-size: 1.5rem; color: var(--accent-gold);"></i>
+                <div>
+                    <div id="live-clock" style="font-size: 1.1rem; font-weight: 800; color: var(--text-primary);">--:--:--</div>
+                    <div id="live-date" style="font-size: 0.75rem; color: var(--text-muted);">--</div>
+                </div>
             </div>
         </div>
     </div>

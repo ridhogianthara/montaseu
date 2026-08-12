@@ -74,6 +74,11 @@ $currentPage = basename($_SERVER['PHP_SELF']);
                             <i class="fas fa-history"></i> Riwayat Saya
                         </a>
                     </li>
+                    <li>
+                        <a href="<?= BASE_URL ?>/employee/password.php" class="nav-link <?= ($currentPage == 'password.php') ? 'active' : '' ?>">
+                            <i class="fas fa-key"></i> Ganti Password
+                        </a>
+                    </li>
                 <?php endif; ?>
             </ul>
         </nav>
