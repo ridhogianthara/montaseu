@@ -1,6 +1,6 @@
 <?php
 /**
- * JSON File-Based Data Storage & Session Configuration (Zero Database)
+ * JSON File-Based Data Storage & Session Configuration (Zero Database / Vercel Serverless Compatible)
  * Montaseu Studio - Interior Design Attendance System
  */
 
@@ -8,8 +8,25 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-define('DATA_DIR', __DIR__ . '/../data/');
-define('UPLOADS_DIR', __DIR__ . '/../uploads/selfies/');
+// Tentukan direktori penyimpanan data (fallback ke temp dir jika read-only seperti di Vercel)
+$targetDataDir = __DIR__ . '/../data/';
+if (!file_exists($targetDataDir)) {
+    @mkdir($targetDataDir, 0777, true);
+}
+if (!@is_writable($targetDataDir)) {
+    $targetDataDir = sys_get_temp_dir() . '/montaseu_data/';
+}
+
+$targetUploadsDir = __DIR__ . '/../uploads/selfies/';
+if (!file_exists($targetUploadsDir)) {
+    @mkdir($targetUploadsDir, 0777, true);
+}
+if (!@is_writable($targetUploadsDir)) {
+    $targetUploadsDir = sys_get_temp_dir() . '/montaseu_uploads/';
+}
+
+define('DATA_DIR', rtrim($targetDataDir, '/') . '/');
+define('UPLOADS_DIR', rtrim($targetUploadsDir, '/') . '/');
 
 // Helper untuk membaca & menulis JSON
 function loadJSON($file, $default = []) {
