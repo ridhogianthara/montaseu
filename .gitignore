@@ -1,0 +1,7 @@
+# Montaseu Studio .gitignore
+config/database.sqlite
+config/database.sqlite-wal
+config/database.sqlite-shm
+*.log
+.DS_Store
+Thumbs.db

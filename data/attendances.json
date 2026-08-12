@@ -1,0 +1,23 @@
+[
+    {
+        "id": 1,
+        "user_id": 2,
+        "date": "2026-08-12",
+        "clock_in_time": "2026-08-12 14:19:41",
+        "clock_in_photo": "\/uploads\/selfies\/test.jpg",
+        "clock_in_lat": -6.23,
+        "clock_in_lng": 106.8,
+        "clock_in_address": "Jl. Senopati",
+        "clock_in_status": "On Time",
+        "clock_in_notes": "Test Note",
+        "clock_out_time": null,
+        "clock_out_photo": null,
+        "clock_out_lat": null,
+        "clock_out_lng": null,
+        "clock_out_address": null,
+        "clock_out_notes": null,
+        "work_duration": null,
+        "location_type": "Studio Office",
+        "created_at": "2026-08-12 14:19:41"
+    }
+]
