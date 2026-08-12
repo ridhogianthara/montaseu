@@ -37,45 +37,50 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $notes = sanitize($_POST['notes'] ?? '');
     $photoData = $_POST['photo_base64'] ?? '';
 
-    // File Upload Fallback if photoData empty
-    if (empty($photoData) && isset($_FILES['photo_file']) && $_FILES['photo_file']['error'] === UPLOAD_ERR_OK) {
-        $tmpName = $_FILES['photo_file']['tmp_name'];
-        $imgContent = file_get_contents($tmpName);
-        $photoData = 'data:image/jpeg;base64,' . base64_encode($imgContent);
-    }
-
-    $photoPath = '';
-    if (!empty($photoData) && strpos($photoData, 'data:image') === 0) {
-        $parts = explode(',', $photoData);
-        $decoded = base64_decode($parts[1] ?? '');
-        if ($decoded) {
-            $fileName = 'selfie_' . $userId . '_' . time() . '_' . rand(100, 999) . '.jpg';
-            $fullTarget = UPLOADS_DIR . $fileName;
-            file_put_contents($fullTarget, $decoded);
-            $photoPath = BASE_URL . '/uploads/selfies/' . $fileName;
+    // Security Check: Validate coordinates bounds
+    if ($lat == 0 || $lng == 0 || abs($lat) > 90 || abs($lng) > 180) {
+        $error = "Lokasi GPS tidak valid atau terdeteksi manipulasi lokasi (Fake GPS). Harap nyalakan GPS fisik perangkat Anda.";
+    } else {
+        // File Upload Fallback if photoData empty
+        if (empty($photoData) && isset($_FILES['photo_file']) && $_FILES['photo_file']['error'] === UPLOAD_ERR_OK) {
+            $tmpName = $_FILES['photo_file']['tmp_name'];
+            $imgContent = file_get_contents($tmpName);
+            $photoData = 'data:image/jpeg;base64,' . base64_encode($imgContent);
         }
-    }
 
-    $currentTimeShort = date('H:i');
+        $photoPath = '';
+        if (!empty($photoData) && strpos($photoData, 'data:image') === 0) {
+            $parts = explode(',', $photoData);
+            $decoded = base64_decode($parts[1] ?? '');
+            if ($decoded) {
+                $fileName = 'selfie_' . $userId . '_' . time() . '_' . rand(100, 999) . '.jpg';
+                $fullTarget = UPLOADS_DIR . $fileName;
+                file_put_contents($fullTarget, $decoded);
+                $photoPath = BASE_URL . '/uploads/selfies/' . $fileName;
+            }
+        }
 
-    if ($action === 'clock_in') {
-        $workStart = $settings['work_start'] ?? '08:30';
-        $status = ($currentTimeShort <= $workStart) ? 'On Time' : 'Late';
+        $currentTimeShort = date('H:i');
 
-        saveClockIn($userId, $today, $photoPath, $lat, $lng, $address, $status, $notes, $locationType);
+        if ($action === 'clock_in') {
+            $workStart = $settings['work_start'] ?? '08:30';
+            $status = ($currentTimeShort <= $workStart) ? 'On Time' : 'Late';
 
-        $message = "Presensi Masuk Berhasil Ditambahkan!";
-        $redirectScript = "<script>setTimeout(function(){ window.location.href = '" . BASE_URL . "/employee/dashboard.php'; }, 1000);</script>";
-    } elseif ($action === 'clock_out' && $todayRecord) {
-        $inTime = new DateTime($todayRecord['clock_in_time']);
-        $outTime = new DateTime(date('Y-m-d H:i:s'));
-        $diff = $inTime->diff($outTime);
-        $durationStr = $diff->h . ' Jam ' . $diff->i . ' Menit';
+            saveClockIn($userId, $today, $photoPath, $lat, $lng, $address, $status, $notes, $locationType);
 
-        saveClockOut($todayRecord['id'], $photoPath, $lat, $lng, $address, $notes, $durationStr);
+            $message = "Presensi Masuk Berhasil Ditambahkan!";
+            $redirectScript = "<script>setTimeout(function(){ window.location.href = '" . BASE_URL . "/employee/dashboard.php'; }, 1000);</script>";
+        } elseif ($action === 'clock_out' && $todayRecord) {
+            $inTime = new DateTime($todayRecord['clock_in_time']);
+            $outTime = new DateTime(date('Y-m-d H:i:s'));
+            $diff = $inTime->diff($outTime);
+            $durationStr = $diff->h . ' Jam ' . $diff->i . ' Menit';
 
-        $message = "Presensi Pulang Berhasil Ditambahkan!";
-        $redirectScript = "<script>setTimeout(function(){ window.location.href = '" . BASE_URL . "/employee/dashboard.php'; }, 1000);</script>";
+            saveClockOut($todayRecord['id'], $photoPath, $lat, $lng, $address, $notes, $durationStr);
+
+            $message = "Presensi Pulang Berhasil Ditambahkan!";
+            $redirectScript = "<script>setTimeout(function(){ window.location.href = '" . BASE_URL . "/employee/dashboard.php'; }, 1000);</script>";
+        }
     }
 }
 
@@ -85,9 +90,15 @@ require_once __DIR__ . '/../includes/header.php';
 <div style="margin-bottom: 1.5rem;">
     <h1 class="brand-title" style="font-size: 1.8rem; margin-bottom: 4px;">Form Absensi Kamera & Location GPS</h1>
     <p style="color: var(--text-secondary); font-size: 0.9rem;">
-        Pencatatan Presensi Real-Time Montaseu Studio (Interior Design)
+        Pencatatan Presensi Real-Time Montaseu Studio (Keamanan GPS Terkunci)
     </p>
 </div>
+
+<?php if (!empty($error)): ?>
+    <div style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: var(--accent-rose); padding: 1rem; border-radius: var(--radius-sm); font-weight:700; margin-bottom: 1.5rem; text-align: center;">
+        <i class="fas fa-exclamation-triangle"></i> <?= $error ?>
+    </div>
+<?php endif; ?>
 
 <?php if (!empty($message)): ?>
     <div style="background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); color: var(--accent-emerald); padding: 1rem; border-radius: var(--radius-sm); font-weight:700; margin-bottom: 1.5rem; text-align: center;">
@@ -111,7 +122,7 @@ require_once __DIR__ . '/../includes/header.php';
     </div>
 <?php else: ?>
 
-<form method="POST" action="" enctype="multipart/form-data" id="absen-form">
+<form method="POST" action="" enctype="multipart/form-data" id="absen-form" onsubmit="return validateAbsenForm();">
     <input type="hidden" name="action" value="<?= $mode ?>">
     <input type="hidden" name="lat" id="lat-input" value="0">
     <input type="hidden" name="lng" id="lng-input" value="0">
@@ -154,14 +165,14 @@ require_once __DIR__ . '/../includes/header.php';
             <hr style="border-color:var(--border-color); margin:1.5rem 0;">
 
             <div class="card-title" style="margin-bottom:0.75rem;">
-                <i class="fas fa-location-arrow" style="color:var(--accent-gold);"></i> 
-                2. Status GPS Lokasi Real-Time
+                <i class="fas fa-shield-alt" style="color:var(--accent-gold);"></i> 
+                2. Status Pengaman GPS & Sensor
             </div>
             <div id="location-status" style="font-size:0.85rem; margin-bottom:0.75rem; color:var(--text-secondary);">
-                Memulai tracking GPS...
+                Memulai tracking GPS fisik...
             </div>
             <button type="button" onclick="getLocation('lat-input', 'lng-input', 'address-input', 'map-preview', <?= $settings['office_lat'] ?? 0 ?>, <?= $settings['office_lng'] ?? 0 ?>)" class="btn-secondary" style="font-size:0.8rem; width:100%;">
-                <i class="fas fa-sync-alt"></i> Refresh / Deteksi Ulang GPS
+                <i class="fas fa-sync-alt"></i> Refresh / Deteksi Ulang GPS Perangkat
             </button>
         </div>
 
@@ -169,7 +180,7 @@ require_once __DIR__ . '/../includes/header.php';
         <div class="card-studio">
             <div class="card-title" style="margin-bottom:1rem;">
                 <i class="fas fa-map-marked-alt" style="color:var(--accent-gold);"></i> 
-                Peta & Detail Presensi Studio
+                Peta & Detail Presensi Studio (Pin Terkunci)
             </div>
 
             <!-- Map Container -->
@@ -208,6 +219,40 @@ require_once __DIR__ . '/../includes/header.php';
 <?php endif; ?>
 
 <script>
+    function validateAbsenForm() {
+        if (typeof isGpsSecure === 'function' && !isGpsSecure()) {
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Presensi Ditolak!',
+                    text: 'Terdeteksi aplikasi Fake GPS / Mock Location pada perangkat Anda.',
+                    background: '#181C23', color: '#F9FAFB'
+                });
+            } else {
+                alert("Presensi Ditolak! Terdeteksi Fake GPS.");
+            }
+            return false;
+        }
+
+        const lat = document.getElementById('lat-input').value;
+        const lng = document.getElementById('lng-input').value;
+
+        if (!lat || !lng || parseFloat(lat) === 0 || parseFloat(lng) === 0) {
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Lokasi GPS Belum Terdeteksi',
+                    text: 'Harap tunggu hingga sinyal GPS perangkat Anda terdeteksi dengan benar.',
+                    background: '#181C23', color: '#F9FAFB'
+                });
+            } else {
+                alert("Harap tunggu hingga sinyal GPS perangkat Anda terdeteksi.");
+            }
+            return false;
+        }
+        return true;
+    }
+
     document.addEventListener('DOMContentLoaded', function() {
         <?php if ($mode !== 'completed'): ?>
             initCamera('webcam-video', 'snap-canvas');
