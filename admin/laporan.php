@@ -35,6 +35,8 @@ usort($fullRecords, function($a, $b) {
 
 // Handle Excel Export (.xls HTML format for native Excel opening with styling)
 if ($export === 'excel') {
+    $clearAfter = ($_GET['clear_after'] ?? '') === '1';
+
     $filename = 'Laporan_Absensi_Montaseu_' . $startDate . '_sd_' . $endDate . '.xls';
     header('Content-Type: application/vnd.ms-excel; charset=utf-8');
     header('Content-Disposition: attachment; filename="' . $filename . '"');
@@ -43,7 +45,7 @@ if ($export === 'excel') {
     echo '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">';
     echo '<head><meta charset="utf-8"><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Laporan Presensi</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--></head>';
     echo '<body>';
-    echo '<h2 style="font-family:Arial, sans-serif;">MONTASEU STUDIO - LAPORAN PRESENSI KARYAWAN (JSON STORAGE)</h2>';
+    echo '<h2 style="font-family:Arial, sans-serif;">MONTASEU STUDIO - LAPORAN PRESENSI KARYAWAN</h2>';
     echo '<p style="font-family:Arial, sans-serif;">Periode: ' . date('d/m/Y', strtotime($startDate)) . ' s/d ' . date('d/m/Y', strtotime($endDate)) . '</p>';
     echo '<table border="1" cellpadding="6" cellspacing="0" style="border-collapse:collapse; font-family:Arial, sans-serif; font-size:12px;">';
     echo '<tr style="background-color:#C5A880; color:#111111; font-weight:bold; text-align:center;">
@@ -78,11 +80,35 @@ if ($export === 'excel') {
     }
     echo '</table>';
     echo '</body></html>';
+
+    // Purge exported attendance records if clear_after=1 requested
+    if ($clearAfter && !empty($fullRecords)) {
+        $exportedIds = array_column($fullRecords, 'id');
+        $allAttendances = getAttendances();
+        $remaining = array_filter($allAttendances, function($a) use ($exportedIds) {
+            if (in_array($a['id'], $exportedIds)) {
+                if (!empty($a['clock_in_photo'])) {
+                    $p = UPLOADS_DIR . basename($a['clock_in_photo']);
+                    if (file_exists($p)) @unlink($p);
+                }
+                if (!empty($a['clock_out_photo'])) {
+                    $p = UPLOADS_DIR . basename($a['clock_out_photo']);
+                    if (file_exists($p)) @unlink($p);
+                }
+                return false;
+            }
+            return true;
+        });
+        saveJSON('attendances.json', array_values($remaining));
+    }
+
     exit();
 }
 
 // Handle CSV Export
 if ($export === 'csv') {
+    $clearAfter = ($_GET['clear_after'] ?? '') === '1';
+
     header('Content-Type: text/csv; charset=utf-8');
     header('Content-Disposition: attachment; filename=Laporan_Absensi_Montaseu_' . $startDate . '_sd_' . $endDate . '.csv');
     
@@ -107,6 +133,27 @@ if ($export === 'csv') {
         ]);
     }
     fclose($output);
+
+    if ($clearAfter && !empty($fullRecords)) {
+        $exportedIds = array_column($fullRecords, 'id');
+        $allAttendances = getAttendances();
+        $remaining = array_filter($allAttendances, function($a) use ($exportedIds) {
+            if (in_array($a['id'], $exportedIds)) {
+                if (!empty($a['clock_in_photo'])) {
+                    $p = UPLOADS_DIR . basename($a['clock_in_photo']);
+                    if (file_exists($p)) @unlink($p);
+                }
+                if (!empty($a['clock_out_photo'])) {
+                    $p = UPLOADS_DIR . basename($a['clock_out_photo']);
+                    if (file_exists($p)) @unlink($p);
+                }
+                return false;
+            }
+            return true;
+        });
+        saveJSON('attendances.json', array_values($remaining));
+    }
+
     exit();
 }
 
@@ -125,13 +172,16 @@ require_once __DIR__ . '/../includes/header.php';
         <div>
             <h1 class="brand-title" style="font-size: 1.8rem; margin-bottom: 4px;">Laporan Presensi & Export</h1>
             <p style="color: var(--text-secondary); font-size: 0.9rem;">
-                Rekap Laporan Presensi Karyawan Montaseu Studio Periode <?= date('d/m/Y', strtotime($startDate)) ?> s/d <?= date('d/m/Y', strtotime($endDate)) ?> (JSON Data)
+                Rekap Laporan Presensi Karyawan Montaseu Studio Periode <?= date('d/m/Y', strtotime($startDate)) ?> s/d <?= date('d/m/Y', strtotime($endDate)) ?>
             </p>
         </div>
 
-        <div style="display:flex; gap:10px;">
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
             <a href="?start_date=<?= $startDate ?>&end_date=<?= $endDate ?>&user_id=<?= $userId ?>&export=excel" class="btn-gold" style="font-size:0.85rem;">
                 <i class="fas fa-file-excel"></i> Export Excel (.xls)
+            </a>
+            <a href="?start_date=<?= $startDate ?>&end_date=<?= $endDate ?>&user_id=<?= $userId ?>&export=excel&clear_after=1" class="btn-danger" style="font-size:0.85rem;" onclick="return confirm('Apakah Anda yakin ingin meng-export file Excel SEKALIGUS MENGHAPUS log presensi terpilih dari sistem?');">
+                <i class="fas fa-trash-alt"></i> Export Excel & Reset Log
             </a>
             <a href="?start_date=<?= $startDate ?>&end_date=<?= $endDate ?>&user_id=<?= $userId ?>&export=csv" class="btn-secondary" style="font-size:0.85rem;">
                 <i class="fas fa-file-csv"></i> Export CSV
