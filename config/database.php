@@ -61,7 +61,7 @@ function saveJSON($file, $data) {
     file_put_contents($path, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE), LOCK_EX);
 }
 
-// Inisialisasi Data Default (Seed JSON jika belum ada)
+// Inisialisasi Data Default (HANYA DIBUAT SEKALI JIKA BERKAS BELUM ADA)
 function initJSONData() {
     if (!file_exists(UPLOADS_DIR)) {
         @mkdir(UPLOADS_DIR, 0777, true);
@@ -82,37 +82,20 @@ function initJSONData() {
         saveJSON('settings.json', $defaultSettings);
     }
 
-    // Users Default
-    $users = loadJSON('users.json', []);
-    $adminPass = password_hash('admin123', PASSWORD_DEFAULT);
-    $userPass = password_hash('user123', PASSWORD_DEFAULT);
+    // Users Default: Hanya diinisialisasi jika file users.json belum pernah dibuat
+    $usersPath = DATA_DIR . 'users.json';
+    if (!file_exists($usersPath)) {
+        $adminPass = password_hash('admin123', PASSWORD_DEFAULT);
+        $userPass = password_hash('user123', PASSWORD_DEFAULT);
 
-    $defaultAccounts = [
-        ['id' => 1, 'name' => 'Admin Montaseu', 'email' => 'admin@montaseu.com', 'password' => $adminPass, 'role' => 'admin', 'job_title' => 'Studio Manager / Admin', 'created_at' => date('Y-m-d H:i:s')],
-        ['id' => 2, 'name' => 'Karyawan Montaseu', 'email' => 'karyawan@montaseu.com', 'password' => $userPass, 'role' => 'karyawan', 'job_title' => 'Staff Interior Designer', 'created_at' => date('Y-m-d H:i:s')],
-        ['id' => 3, 'name' => 'Rian Pratama', 'email' => 'designer@montaseu.com', 'password' => $userPass, 'role' => 'karyawan', 'job_title' => 'Lead Interior Designer', 'created_at' => date('Y-m-d H:i:s')],
-        ['id' => 4, 'name' => 'Siti Amalia', 'email' => 'architect@montaseu.com', 'password' => $userPass, 'role' => 'karyawan', 'job_title' => 'Senior Project Architect', 'created_at' => date('Y-m-d H:i:s')],
-        ['id' => 5, 'name' => 'Budi Santoso', 'email' => 'supervisor@montaseu.com', 'password' => $userPass, 'role' => 'karyawan', 'job_title' => 'Site Supervisor', 'created_at' => date('Y-m-d H:i:s')]
-    ];
-
-    if (empty($users)) {
+        $defaultAccounts = [
+            ['id' => 1, 'name' => 'Admin Montaseu', 'email' => 'admin@montaseu.com', 'password' => $adminPass, 'role' => 'admin', 'job_title' => 'Studio Manager / Admin', 'created_at' => date('Y-m-d H:i:s')],
+            ['id' => 2, 'name' => 'Karyawan Montaseu', 'email' => 'karyawan@montaseu.com', 'password' => $userPass, 'role' => 'karyawan', 'job_title' => 'Staff Interior Designer', 'created_at' => date('Y-m-d H:i:s')],
+            ['id' => 3, 'name' => 'Rian Pratama', 'email' => 'designer@montaseu.com', 'password' => $userPass, 'role' => 'karyawan', 'job_title' => 'Lead Interior Designer', 'created_at' => date('Y-m-d H:i:s')],
+            ['id' => 4, 'name' => 'Siti Amalia', 'email' => 'architect@montaseu.com', 'password' => $userPass, 'role' => 'karyawan', 'job_title' => 'Senior Project Architect', 'created_at' => date('Y-m-d H:i:s')],
+            ['id' => 5, 'name' => 'Budi Santoso', 'email' => 'supervisor@montaseu.com', 'password' => $userPass, 'role' => 'karyawan', 'job_title' => 'Site Supervisor', 'created_at' => date('Y-m-d H:i:s')]
+        ];
         saveJSON('users.json', $defaultAccounts);
-    } else {
-        // Ensure default accounts exist & have valid password hashes
-        $existingEmails = array_column($users, 'email');
-        $updated = false;
-        foreach ($defaultAccounts as $acc) {
-            $key = array_search($acc['email'], $existingEmails);
-            if ($key === false) {
-                $users[] = $acc;
-                $updated = true;
-            } else {
-                $users[$key]['password'] = $acc['password'];
-                $users[$key]['role'] = $acc['role'];
-                $updated = true;
-            }
-        }
-        if ($updated) saveJSON('users.json', $users);
     }
 
     // Attendances Default File
