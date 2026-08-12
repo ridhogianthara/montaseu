@@ -37,30 +37,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $notes = sanitize($_POST['notes'] ?? '');
     $photoData = $_POST['photo_base64'] ?? '';
 
-    // Security Check: Validate coordinates bounds
-    if ($lat == 0 || $lng == 0 || abs($lat) > 90 || abs($lng) > 180) {
+    // Security Check 1: Mandatory Photo Capture from live camera
+    if (empty($photoData) || strpos($photoData, 'data:image') !== 0) {
+        $error = "Foto selfie WAJIB diambil secara langsung menggunakan kamera! Dilarang menggunakan foto dari galeri.";
+    }
+    // Security Check 2: Validate coordinates bounds & Anti-Fake GPS
+    elseif ($lat == 0 || $lng == 0 || abs($lat) > 90 || abs($lng) > 180) {
         $error = "Lokasi GPS tidak valid atau terdeteksi manipulasi lokasi (Fake GPS). Harap nyalakan GPS fisik perangkat Anda.";
-    } else {
-        // File Upload Fallback if photoData empty
-        if (empty($photoData) && isset($_FILES['photo_file']) && $_FILES['photo_file']['error'] === UPLOAD_ERR_OK) {
-            $tmpName = $_FILES['photo_file']['tmp_name'];
-            $imgContent = file_get_contents($tmpName);
-            $photoData = 'data:image/jpeg;base64,' . base64_encode($imgContent);
-        }
-
+    } 
+    else {
+        // Decode and save live camera photo
+        $parts = explode(',', $photoData);
+        $decoded = base64_decode($parts[1] ?? '');
         $photoPath = '';
-        if (!empty($photoData) && strpos($photoData, 'data:image') === 0) {
-            $parts = explode(',', $photoData);
-            $decoded = base64_decode($parts[1] ?? '');
-            if ($decoded) {
-                $fileName = 'selfie_' . $userId . '_' . time() . '_' . rand(100, 999) . '.jpg';
-                $fullTarget = UPLOADS_DIR . $fileName;
-                file_put_contents($fullTarget, $decoded);
-                $photoPath = BASE_URL . '/uploads/selfies/' . $fileName;
-            }
+        if ($decoded) {
+            $fileName = 'selfie_' . $userId . '_' . time() . '_' . rand(100, 999) . '.jpg';
+            $fullTarget = UPLOADS_DIR . $fileName;
+            file_put_contents($fullTarget, $decoded);
+            $photoPath = BASE_URL . '/uploads/selfies/' . $fileName;
         }
 
-        $currentTimeShort = date('H:i');
+        // Server-Side Immutable Timestamp (Strictly non-editable by user/admin)
+        $serverTime = date('Y-m-d H:i:s');
+        $currentTimeShort = date('H:i', strtotime($serverTime));
 
         if ($action === 'clock_in') {
             $workStart = $settings['work_start'] ?? '08:30';
@@ -72,7 +71,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $redirectScript = "<script>setTimeout(function(){ window.location.href = '" . BASE_URL . "/employee/dashboard.php'; }, 1000);</script>";
         } elseif ($action === 'clock_out' && $todayRecord) {
             $inTime = new DateTime($todayRecord['clock_in_time']);
-            $outTime = new DateTime(date('Y-m-d H:i:s'));
+            $outTime = new DateTime($serverTime);
             $diff = $inTime->diff($outTime);
             $durationStr = $diff->h . ' Jam ' . $diff->i . ' Menit';
 
@@ -90,7 +89,7 @@ require_once __DIR__ . '/../includes/header.php';
 <div style="margin-bottom: 1.5rem;">
     <h1 class="brand-title" style="font-size: 1.8rem; margin-bottom: 4px;">Form Absensi Kamera & Location GPS</h1>
     <p style="color: var(--text-secondary); font-size: 0.9rem;">
-        Pencatatan Presensi Real-Time Montaseu Studio (Keamanan GPS Terkunci)
+        Pencatatan Presensi Real-Time Montaseu Studio (Foto Kamera Wajib & Jam Terkunci Otomatis)
     </p>
 </div>
 
@@ -133,7 +132,7 @@ require_once __DIR__ . '/../includes/header.php';
         <div class="card-studio">
             <div class="card-title" style="margin-bottom:1rem;">
                 <i class="fas fa-camera" style="color:var(--accent-gold);"></i> 
-                1. Foto Selfie Presensi <?= $mode === 'clock_in' ? 'Masuk' : 'Pulang' ?>
+                1. Foto Selfie Live Kamera (Wajib)
             </div>
 
             <div class="camera-box">
@@ -152,12 +151,6 @@ require_once __DIR__ . '/../includes/header.php';
                 <button type="button" id="btn-retake" onclick="retakeCamera('webcam-video', 'photo-preview', 'photo-base64')" class="btn-secondary" style="font-size:0.85rem; display:none;">
                     <i class="fas fa-redo"></i> Foto Ulang
                 </button>
-            </div>
-
-            <!-- Fallback Manual Upload if camera unavailable -->
-            <div id="fallback-photo-group" style="display:none; margin-top:1rem;">
-                <label class="form-label">Atau Upload Foto Selfie Manual:</label>
-                <input type="file" name="photo_file" accept="image/*" class="form-input">
             </div>
 
             <canvas id="snap-canvas" style="display:none;"></canvas>
@@ -180,7 +173,7 @@ require_once __DIR__ . '/../includes/header.php';
         <div class="card-studio">
             <div class="card-title" style="margin-bottom:1rem;">
                 <i class="fas fa-map-marked-alt" style="color:var(--accent-gold);"></i> 
-                Peta & Detail Presensi Studio (Pin Terkunci)
+                Peta & Detail Presensi Studio (Waktu Terkunci Server)
             </div>
 
             <!-- Map Container -->
@@ -220,6 +213,23 @@ require_once __DIR__ . '/../includes/header.php';
 
 <script>
     function validateAbsenForm() {
+        // Validasi 1: Foto Selfie Wajib Diambil dari Kamera Live
+        const photo = document.getElementById('photo-base64').value;
+        if (!photo || photo === '' || !photo.startsWith('data:image')) {
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Foto Selfie Wajib!',
+                    text: 'Harap mengambil foto selfie secara langsung menggunakan kamera (klik tombol "Ambil Foto Snapshot"). Dilarang menggunakan foto galeri.',
+                    background: '#181C23', color: '#F9FAFB'
+                });
+            } else {
+                alert("Foto selfie WAJIB diambil secara langsung menggunakan kamera!");
+            }
+            return false;
+        }
+
+        // Validasi 2: Anti-Fake GPS Check
         if (typeof isGpsSecure === 'function' && !isGpsSecure()) {
             if (typeof Swal !== 'undefined') {
                 Swal.fire({
@@ -234,6 +244,7 @@ require_once __DIR__ . '/../includes/header.php';
             return false;
         }
 
+        // Validasi 3: Koordinat GPS
         const lat = document.getElementById('lat-input').value;
         const lng = document.getElementById('lng-input').value;
 

@@ -1,5 +1,5 @@
 /**
- * Montaseu Studio - Webcam Capture Engine
+ * Montaseu Studio - Live Webcam & Camera Capture Engine (No Gallery Upload Allowed)
  */
 
 let cameraStream = null;
@@ -17,18 +17,21 @@ function initCamera(videoId, canvasId) {
                 cameraStream = stream;
                 video.srcObject = stream;
                 video.play();
-                document.getElementById('camera-status').style.display = 'none';
+                const statusEl = document.getElementById('camera-status');
+                if (statusEl) statusEl.style.display = 'none';
             })
             .catch(function(err) {
                 console.error("Camera access error:", err);
                 const statusEl = document.getElementById('camera-status');
                 if (statusEl) {
-                    statusEl.innerHTML = `<span style="color:#F87171">Izin Kamera Ditolak / Tidak Ditemukan.<br>Gunakan Upload Foto Manual.</span>`;
+                    statusEl.innerHTML = `<span style="color:#F87171; font-weight:bold;"><i class="fas fa-exclamation-triangle"></i> Akses Kamera Ditolak / Tidak Ditemukan.<br>Presensi WAJIB menggunakan foto kamera langsung. Harap izinkan akses kamera browser.</span>`;
                 }
-                document.getElementById('fallback-photo-group').style.display = 'block';
             });
     } else {
-        document.getElementById('fallback-photo-group').style.display = 'block';
+        const statusEl = document.getElementById('camera-status');
+        if (statusEl) {
+            statusEl.innerHTML = `<span style="color:#F87171; font-weight:bold;"><i class="fas fa-exclamation-triangle"></i> Browser Anda tidak mendukung pengambilan foto kamera langsung.</span>`;
+        }
     }
 }
 
@@ -39,6 +42,20 @@ function takeSnapshot(videoId, canvasId, photoInputId, previewImgId) {
     const previewImg = document.getElementById(previewImgId);
 
     if (!video || !canvas) return false;
+
+    if (!video.videoWidth || video.videoWidth === 0) {
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Kamera Belum Siap',
+                text: 'Harap tunggu hingga feed kamera muncul di layar.',
+                background: '#181C23', color: '#F9FAFB'
+            });
+        } else {
+            alert("Kamera belum siap.");
+        }
+        return false;
+    }
 
     const context = canvas.getContext('2d');
     canvas.width = video.videoWidth || 640;
@@ -56,8 +73,10 @@ function takeSnapshot(videoId, canvasId, photoInputId, previewImgId) {
         video.style.display = 'none';
     }
 
-    document.getElementById('btn-snap').style.display = 'none';
-    document.getElementById('btn-retake').style.display = 'inline-flex';
+    const btnSnap = document.getElementById('btn-snap');
+    const btnRetake = document.getElementById('btn-retake');
+    if (btnSnap) btnSnap.style.display = 'none';
+    if (btnRetake) btnRetake.style.display = 'inline-flex';
     return true;
 }
 
@@ -71,8 +90,10 @@ function retakeCamera(videoId, previewImgId, photoInputId) {
     if (photoInput) photoInput.value = '';
 
     capturedBase64 = null;
-    document.getElementById('btn-snap').style.display = 'inline-flex';
-    document.getElementById('btn-retake').style.display = 'none';
+    const btnSnap = document.getElementById('btn-snap');
+    const btnRetake = document.getElementById('btn-retake');
+    if (btnSnap) btnSnap.style.display = 'inline-flex';
+    if (btnRetake) btnRetake.style.display = 'none';
 }
 
 function stopCamera() {
