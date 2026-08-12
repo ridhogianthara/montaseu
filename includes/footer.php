@@ -14,9 +14,9 @@
 <!-- JavaScript Libraries -->
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="/Montaseu/assets/js/camera.js"></script>
-<script src="/Montaseu/assets/js/location.js"></script>
-<script src="/Montaseu/assets/js/app.js"></script>
+<script src="<?= BASE_URL ?>/assets/js/camera.js"></script>
+<script src="<?= BASE_URL ?>/assets/js/location.js"></script>
+<script src="<?= BASE_URL ?>/assets/js/app.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         updateLiveClock('footer-clock');

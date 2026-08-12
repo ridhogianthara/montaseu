@@ -14,22 +14,6 @@
       "dest": "/uploads/$1"
     },
     {
-      "src": "/admin/(.*)",
-      "dest": "/api/index.php"
-    },
-    {
-      "src": "/employee/(.*)",
-      "dest": "/api/index.php"
-    },
-    {
-      "src": "/auth/(.*)",
-      "dest": "/api/index.php"
-    },
-    {
-      "src": "/",
-      "dest": "/api/index.php"
-    },
-    {
       "src": "/(.*)",
       "dest": "/api/index.php"
     }

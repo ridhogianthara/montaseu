@@ -79,7 +79,7 @@ usort($todayFullList, function($a, $b) {
         <div class="card-title">
             <i class="fas fa-satellite-dish" style="color:var(--accent-gold);"></i> Real-Time Presensi Karyawan Hari Ini (<?= date('d F Y') ?>)
         </div>
-        <a href="/Montaseu/admin/rekap.php" class="btn-secondary" style="font-size:0.8rem; padding:6px 12px;">
+        <a href="<?= BASE_URL ?>/admin/rekap.php" class="btn-secondary" style="font-size:0.8rem; padding:6px 12px;">
             <i class="fas fa-list"></i> Lihat Semua Monitoring
         </a>
     </div>

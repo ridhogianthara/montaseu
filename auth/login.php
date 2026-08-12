@@ -3,10 +3,10 @@ require_once __DIR__ . '/../config/database.php';
 
 if (isLoggedIn()) {
     if (isAdmin()) {
-        header("Location: /Montaseu/admin/dashboard.php");
+        header("Location: " . BASE_URL . "/admin/dashboard.php");
         exit();
     } else {
-        header("Location: /Montaseu/employee/dashboard.php");
+        header("Location: " . BASE_URL . "/employee/dashboard.php");
         exit();
     }
 }
@@ -31,9 +31,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['job_title'] = $user['job_title'];
 
             if ($user['role'] === 'admin') {
-                header("Location: /Montaseu/admin/dashboard.php");
+                header("Location: " . BASE_URL . "/admin/dashboard.php");
             } else {
-                header("Location: /Montaseu/employee/dashboard.php");
+                header("Location: " . BASE_URL . "/employee/dashboard.php");
             }
             exit();
         } else {
@@ -48,7 +48,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login | Montaseu Studio Absensi</title>
-    <link rel="stylesheet" href="/Montaseu/assets/css/style.css">
+    <link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body class="login-body">
@@ -58,7 +58,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div class="icon-box">M</div>
         <h1 class="brand-title" style="font-size: 1.8rem; margin-bottom: 2px;">MONTASEU</h1>
         <div class="sub-title" style="font-size: 0.75rem;">Interior Design Studio</div>
-        <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 10px;">Portal Web Absensi & Tracking Lokasi (Zero Database)</p>
+        <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 10px;">Portal Web Absensi & Tracking Lokasi</p>
     </div>
 
     <?php if ($msg === 'logout'): ?>

@@ -4,5 +4,5 @@ require_once __DIR__ . '/../config/database.php';
 session_unset();
 session_destroy();
 
-header("Location: /Montaseu/auth/login.php?msg=logout");
+header("Location: " . BASE_URL . "/auth/login.php?msg=logout");
 exit();

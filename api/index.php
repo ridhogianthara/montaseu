@@ -3,20 +3,29 @@
  * Vercel Serverless Function Router for Montaseu Studio
  */
 
-$uri = urldecode(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH));
+require_once __DIR__ . '/../config/database.php';
 
-// Route to specific PHP files if requested
-if ($uri === '/index.php' || $uri === '/') {
+$requestUri = $_SERVER['REQUEST_URI'] ?? '/';
+$parsed = parse_url($requestUri);
+$path = urldecode($parsed['path'] ?? '/');
+
+// Strip /Montaseu prefix if present
+if (strpos($path, '/Montaseu') === 0) {
+    $path = substr($path, 9);
+}
+
+if (empty($path) || $path === '/') {
     require __DIR__ . '/../index.php';
     exit();
 }
 
-$targetFile = __DIR__ . '/..' . $uri;
+$targetFile = realpath(__DIR__ . '/..' . $path);
+$rootDir = realpath(__DIR__ . '/..');
 
-if (file_exists($targetFile) && !is_dir($targetFile)) {
+if ($targetFile && strpos($targetFile, $rootDir) === 0 && file_exists($targetFile) && !is_dir($targetFile)) {
     require $targetFile;
     exit();
 }
 
-// Default fallback to index.php
+// Fallback to index.php
 require __DIR__ . '/../index.php';

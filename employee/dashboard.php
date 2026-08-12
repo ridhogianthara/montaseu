@@ -1,7 +1,7 @@
 <?php
 require_once __DIR__ . '/../includes/header.php';
 if (!isEmployee()) {
-    header("Location: /Montaseu/admin/dashboard.php");
+    header("Location: " . BASE_URL . "/admin/dashboard.php");
     exit();
 }
 
@@ -110,7 +110,7 @@ $settings = getSettings();
     </div>
 
     <div style="margin-top:1.5rem; text-align:right;">
-        <a href="/Montaseu/employee/absen.php" class="btn-gold">
+        <a href="<?= BASE_URL ?>/employee/absen.php" class="btn-gold">
             <i class="fas fa-camera"></i> 
             <?php if (!$todayRecord): ?>
                 Lakukan Absen Masuk Sekarang
@@ -150,7 +150,7 @@ $settings = getSettings();
         <div class="card-title">
             <i class="fas fa-history" style="color:var(--accent-gold);"></i> Riwayat Presensi Terbaru Anda
         </div>
-        <a href="/Montaseu/employee/riwayat.php" class="btn-secondary" style="font-size:0.8rem; padding:5px 12px;">
+        <a href="<?= BASE_URL ?>/employee/riwayat.php" class="btn-secondary" style="font-size:0.8rem; padding:5px 12px;">
             Lihat Semua Riwayat <i class="fas fa-arrow-right"></i>
         </a>
     </div>

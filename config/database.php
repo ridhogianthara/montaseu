@@ -8,6 +8,15 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
+// Dynamic Base URL detection (Localhost XAMPP vs Vercel / Domain Root)
+function getBaseUrl() {
+    if (isset($_SERVER['HTTP_HOST']) && strpos($_SERVER['HTTP_HOST'], 'localhost') !== false) {
+        return '/Montaseu';
+    }
+    return '';
+}
+define('BASE_URL', getBaseUrl());
+
 // Tentukan direktori penyimpanan data (fallback ke temp dir jika read-only seperti di Vercel)
 $targetDataDir = __DIR__ . '/../data/';
 if (!file_exists($targetDataDir)) {
@@ -300,7 +309,7 @@ function isEmployee() {
 
 function requireAuth() {
     if (!isLoggedIn()) {
-        header("Location: /Montaseu/auth/login.php");
+        header("Location: " . BASE_URL . "/auth/login.php");
         exit();
     }
 }
@@ -308,7 +317,7 @@ function requireAuth() {
 function requireAdmin() {
     requireAuth();
     if (!isAdmin()) {
-        header("Location: /Montaseu/employee/dashboard.php");
+        header("Location: " . BASE_URL . "/employee/dashboard.php");
         exit();
     }
 }

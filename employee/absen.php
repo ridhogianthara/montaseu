@@ -1,7 +1,7 @@
 <?php
 require_once __DIR__ . '/../includes/header.php';
 if (!isEmployee()) {
-    header("Location: /Montaseu/admin/dashboard.php");
+    header("Location: " . BASE_URL . "/admin/dashboard.php");
     exit();
 }
 
@@ -49,7 +49,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $fileName = 'selfie_' . $userId . '_' . time() . '_' . rand(100, 999) . '.jpg';
             $fullTarget = UPLOADS_DIR . $fileName;
             file_put_contents($fullTarget, $decoded);
-            $photoPath = '/Montaseu/uploads/selfies/' . $fileName;
+            $photoPath = BASE_URL . '/uploads/selfies/' . $fileName;
         }
     }
 
@@ -62,7 +62,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         saveClockIn($userId, $today, $photoPath, $lat, $lng, $address, $status, $notes, $locationType);
 
         $message = "Presensi Masuk Berhasil Ditambahkan!";
-        header("Refresh:1; url=/Montaseu/employee/dashboard.php");
+        header("Refresh:1; url=" . BASE_URL . "/employee/dashboard.php");
     } elseif ($action === 'clock_out' && $todayRecord) {
         $inTime = new DateTime($todayRecord['clock_in_time']);
         $outTime = new DateTime(date('Y-m-d H:i:s'));
@@ -72,7 +72,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         saveClockOut($todayRecord['id'], $photoPath, $lat, $lng, $address, $notes, $durationStr);
 
         $message = "Presensi Pulang Berhasil Ditambahkan!";
-        header("Refresh:1; url=/Montaseu/employee/dashboard.php");
+        header("Refresh:1; url=" . BASE_URL . "/employee/dashboard.php");
     }
 }
 ?>
@@ -99,7 +99,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <p style="color:var(--text-muted); max-width:450px; margin:0 auto 1.5rem;">
             Anda telah melakukan Absen Masuk (<?= date('H:i', strtotime($todayRecord['clock_in_time'])) ?> WIB) dan Absen Pulang (<?= date('H:i', strtotime($todayRecord['clock_out_time'])) ?> WIB).
         </p>
-        <a href="/Montaseu/employee/dashboard.php" class="btn-gold">
+        <a href="<?= BASE_URL ?>/employee/dashboard.php" class="btn-gold">
             <i class="fas fa-arrow-left"></i> Kembali ke Dashboard
         </a>
     </div>
