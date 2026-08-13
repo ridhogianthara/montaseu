@@ -5,6 +5,9 @@
  * Zero Database / Vercel Compatible with Master Vault Accumulator & Auto-Healing
  */
 
+// Set Timezone Standar Indonesia (WIB - Asia/Jakarta)
+date_default_timezone_set('Asia/Jakarta');
+
 if (ob_get_level() == 0) {
     ob_start();
 }
