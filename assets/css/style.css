@@ -93,6 +93,12 @@ a {
     justify-content: space-between;
 }
 
+.nav-brand-group {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
 .nav-brand {
     display: flex;
     align-items: center;
@@ -113,28 +119,63 @@ a {
     box-shadow: var(--shadow-gold);
 }
 
+.nav-toggle {
+    display: none;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    color: var(--accent-gold);
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-sm);
+    font-size: 1.15rem;
+    cursor: pointer;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.nav-toggle:hover {
+    background: var(--bg-card-hover);
+    border-color: var(--accent-gold);
+}
+
+.nav-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex: 1;
+    margin-left: 2rem;
+}
+
 .nav-menu {
     display: flex;
     align-items: center;
-    gap: 1.5rem;
+    gap: 0.6rem;
     list-style: none;
 }
 
 .nav-link {
     color: var(--text-secondary);
-    font-size: 0.9rem;
-    font-weight: 500;
-    padding: 0.5rem 0.85rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    padding: 0.45rem 0.75rem;
     border-radius: var(--radius-sm);
     transition: all 0.25s ease;
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
+    white-space: nowrap;
 }
 
 .nav-link:hover, .nav-link.active {
     color: var(--accent-gold-light);
-    background: rgba(197, 168, 128, 0.12);
+    background: rgba(197, 168, 128, 0.15);
+}
+
+.user-action-group {
+    display: flex;
+    align-items: center;
+    gap: 12px;
 }
 
 .user-badge {
@@ -538,4 +579,121 @@ a {
 
 .demo-account-box strong {
     color: var(--accent-gold);
+}
+
+/* Mobile Responsiveness & Adaptive Navigation */
+@media (max-width: 992px) {
+    .app-header {
+        padding: 0.75rem 1rem;
+    }
+
+    .header-container {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .nav-brand-group {
+        width: 100%;
+    }
+
+    .nav-toggle {
+        display: flex;
+    }
+
+    .nav-wrapper {
+        display: none;
+        flex-direction: column;
+        align-items: stretch;
+        margin-left: 0;
+        margin-top: 0.85rem;
+        padding-top: 0.85rem;
+        border-top: 1px solid var(--border-color);
+        gap: 1rem;
+    }
+
+    .nav-wrapper.mobile-open {
+        display: flex;
+        animation: fadeInDown 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .nav-menu {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.4rem;
+    }
+
+    .nav-link {
+        padding: 0.75rem 1rem;
+        font-size: 0.95rem;
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-sm);
+        justify-content: flex-start;
+    }
+
+    .user-action-group {
+        justify-content: space-between;
+        padding-top: 0.75rem;
+        border-top: 1px solid var(--border-color);
+    }
+}
+
+@keyframes fadeInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@media (max-width: 768px) {
+    .main-wrapper {
+        padding: 1.25rem 0.85rem;
+    }
+
+    .grid-stats {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.75rem;
+    }
+
+    .stat-card {
+        padding: 0.9rem 1rem;
+    }
+
+    .stat-value {
+        font-size: 1.4rem;
+    }
+
+    .card-studio {
+        padding: 1rem;
+        border-radius: var(--radius-sm);
+    }
+
+    .table-responsive {
+        margin: 0 -0.25rem;
+        padding: 0 0.25rem;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .studio-table th, .studio-table td {
+        padding: 0.65rem 0.5rem;
+        font-size: 0.78rem;
+    }
+
+    .brand-title {
+        font-size: 1.35rem !important;
+    }
+}
+
+@media (max-width: 520px) {
+    .grid-stats {
+        grid-template-columns: 1fr;
+    }
+
+    .user-badge {
+        padding: 0.3rem 0.6rem;
+    }
 }
