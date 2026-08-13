@@ -58,12 +58,12 @@ function takeSnapshot(videoId, canvasId, photoInputId, previewImgId) {
     }
 
     const context = canvas.getContext('2d');
-    canvas.width = video.videoWidth || 640;
-    canvas.height = video.videoHeight || 480;
+    canvas.width = 480;
+    canvas.height = 360;
 
     context.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-    capturedBase64 = canvas.toDataURL('image/jpeg', 0.85);
+    capturedBase64 = canvas.toDataURL('image/jpeg', 0.65);
     if (photoInput) {
         photoInput.value = capturedBase64;
     }

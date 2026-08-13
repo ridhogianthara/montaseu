@@ -114,8 +114,8 @@ usort($todayFullList, function($a, $b) {
                                 <span style="font-size:0.75rem; color:var(--accent-gold);"><?= sanitize($row['job_title']) ?></span>
                             </td>
                             <td>
-                                <?php if ($row['clock_in_photo']): ?>
-                                    <img src="<?= $row['clock_in_photo'] ?>" class="img-thumb" onclick="viewImageModal('<?= $row['clock_in_photo'] ?>', 'Foto Selfie Presensi - <?= sanitize($row['name']) ?>')">
+                                <?php if (!empty($row['clock_in_photo'])): ?>
+                                    <img src="<?= $row['clock_in_photo'] ?>" class="img-thumb" onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name=Selfie&background=C5A880&color=181C23';" onclick="viewImageModal('<?= addslashes($row['clock_in_photo']) ?>', 'Foto Selfie Presensi - <?= sanitize($row['name']) ?>')">
                                 <?php else: ?>
                                     <span style="color:var(--text-muted); font-size:0.8rem;">-</span>
                                 <?php endif; ?>

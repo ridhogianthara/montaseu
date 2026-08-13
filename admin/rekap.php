@@ -101,8 +101,8 @@ usort($karyawanList, function($a, $b) {
                                 <span style="font-size:0.75rem; color:var(--accent-gold);"><?= sanitize($r['job_title']) ?></span>
                             </td>
                             <td>
-                                <?php if ($r['clock_in_photo']): ?>
-                                    <img src="<?= $r['clock_in_photo'] ?>" class="img-thumb" onclick="viewImageModal('<?= $r['clock_in_photo'] ?>', 'Foto Selfie Presensi - <?= sanitize($r['name']) ?>')">
+                                <?php if (!empty($r['clock_in_photo'])): ?>
+                                    <img src="<?= $r['clock_in_photo'] ?>" class="img-thumb" onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name=Selfie&background=C5A880&color=181C23';" onclick="viewImageModal('<?= addslashes($r['clock_in_photo']) ?>', 'Foto Selfie Presensi - <?= sanitize($r['name']) ?>')">
                                 <?php else: ?>
                                     <span style="color:var(--text-muted);">-</span>
                                 <?php endif; ?>

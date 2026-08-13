@@ -64,8 +64,8 @@ usort($records, function($a, $b) {
                             <td><?= $idx++ ?></td>
                             <td><strong><?= date('d/m/Y', strtotime($r['date'])) ?></strong></td>
                             <td>
-                                <?php if ($r['clock_in_photo']): ?>
-                                    <img src="<?= $r['clock_in_photo'] ?>" class="img-thumb" onclick="viewImageModal('<?= $r['clock_in_photo'] ?>', 'Foto Selfie Presensi <?= date('d/m/Y', strtotime($r['date'])) ?>')">
+                                <?php if (!empty($r['clock_in_photo'])): ?>
+                                    <img src="<?= $r['clock_in_photo'] ?>" class="img-thumb" onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name=Selfie&background=C5A880&color=181C23';" onclick="viewImageModal('<?= addslashes($r['clock_in_photo']) ?>', 'Foto Selfie Presensi <?= date('d/m/Y', strtotime($r['date'])) ?>')">
                                 <?php else: ?>
                                     <span style="color:var(--text-muted);">-</span>
                                 <?php endif; ?>

@@ -46,15 +46,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = "Lokasi GPS tidak valid atau terdeteksi manipulasi lokasi (Fake GPS). Harap nyalakan GPS fisik perangkat Anda.";
     } 
     else {
-        // Decode and save live camera photo
-        $parts = explode(',', $photoData);
-        $decoded = base64_decode($parts[1] ?? '');
-        $photoPath = '';
-        if ($decoded) {
-            $fileName = 'selfie_' . $userId . '_' . time() . '_' . rand(100, 999) . '.jpg';
-            $fullTarget = UPLOADS_DIR . $fileName;
-            file_put_contents($fullTarget, $decoded);
-            $photoPath = BASE_URL . '/uploads/selfies/' . $fileName;
+        // Store selfie photo as Data URI directly for 100% reliable cross-platform rendering
+        $photoPath = $photoData;
+
+        // Also attempt saving to disk as a secondary backup if disk is writable
+        if (strpos($photoData, 'data:image') === 0) {
+            $parts = explode(',', $photoData);
+            $decoded = base64_decode($parts[1] ?? '');
+            if ($decoded) {
+                $fileName = 'selfie_' . $userId . '_' . time() . '_' . rand(100, 999) . '.jpg';
+                @file_put_contents(UPLOADS_DIR . $fileName, $decoded);
+            }
         }
 
         // Server-Side Immutable Timestamp (Strictly non-editable by user/admin)
