@@ -11,37 +11,49 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($action === 'add_user') {
         $name = sanitize($_POST['name'] ?? '');
+        $username = sanitize($_POST['username'] ?? '');
         $email = sanitize($_POST['email'] ?? '');
         $password = $_POST['password'] ?? '';
         $role = sanitize($_POST['role'] ?? 'karyawan');
         $jobTitle = sanitize($_POST['job_title'] ?? 'Staff Interior');
 
-        if (empty($name) || empty($email) || empty($password)) {
-            $error = 'Nama, Email, dan Password wajib diisi!';
+        if (empty($name) || empty($username) || empty($password)) {
+            $error = 'Nama, Username Login, dan Password wajib diisi!';
         } else {
-            $existing = getUserByEmail($email);
+            $existing = getUserByUsername($username);
             if ($existing) {
-                $error = 'Email sudah terdaftar. Gunakan email lain!';
+                $error = 'Username sudah terdaftar. Gunakan username lain!';
             } else {
-                saveUser($name, $email, $password, $role, $jobTitle);
-                $message = "Karyawan baru '$name' berhasil ditambahkan!";
+                $res = saveUser($name, $username, $password, $role, $jobTitle, $email);
+                if ($res) {
+                    $message = "Karyawan baru '$name' (Username: $username) berhasil ditambahkan!";
+                } else {
+                    $error = "Gagal menyimpan akun karyawan!";
+                }
             }
         }
     } elseif ($action === 'edit_user') {
         $id = (int)($_POST['id'] ?? 0);
         $name = sanitize($_POST['name'] ?? '');
+        $username = sanitize($_POST['username'] ?? '');
         $email = sanitize($_POST['email'] ?? '');
         $role = sanitize($_POST['role'] ?? 'karyawan');
         $jobTitle = sanitize($_POST['job_title'] ?? 'Staff Interior');
         $password = $_POST['password'] ?? '';
 
-        if ($id > 0 && !empty($name) && !empty($email)) {
-            saveUser($name, $email, $password, $role, $jobTitle, $id);
-            $message = "Data akun '$name' berhasil diperbarui!";
+        if ($id > 0 && !empty($name) && !empty($username)) {
+            $res = saveUser($name, $username, $password, $role, $jobTitle, $email, $id);
+            if ($res) {
+                $message = "Data akun '$name' berhasil diperbarui!";
+            } else {
+                $error = "Gagal memperbarui akun. Username mungkin sudah digunakan oleh akun lain.";
+            }
+        } else {
+            $error = 'Nama Lengkap dan Username Login wajib diisi!';
         }
     } elseif ($action === 'delete_user') {
         $id = (int)($_POST['id'] ?? 0);
-        if ($id === $_SESSION['user_id']) {
+        if ($id === (int)$_SESSION['user_id']) {
             $error = "Anda tidak dapat menghapus akun Anda sendiri!";
         } elseif ($id > 0) {
             deleteUser($id);
@@ -65,7 +77,7 @@ usort($users, function($a, $b) {
         <div>
             <h1 class="brand-title" style="font-size: 1.8rem; margin-bottom: 4px;">Kelola Data Karyawan</h1>
             <p style="color: var(--text-secondary); font-size: 0.9rem;">
-                Manajemen Akun Login Karyawan & Team Montaseu Studio (JSON Data)
+                Manajemen Akun Login Karyawan & Team Montaseu Studio (Login Username)
             </p>
         </div>
         <button class="btn-gold" onclick="openAddModal()">
@@ -93,7 +105,7 @@ usort($users, function($a, $b) {
                 <tr>
                     <th>No</th>
                     <th>Nama Lengkap</th>
-                    <th>Email Login</th>
+                    <th>Username Login</th>
                     <th>Jabatan / Posisi Studio</th>
                     <th>Hak Akses Role</th>
                     <th>Tanggal Dibuat</th>
@@ -106,9 +118,16 @@ usort($users, function($a, $b) {
                         <td><?= $idx + 1 ?></td>
                         <td>
                             <strong style="color:var(--text-primary);"><?= sanitize($u['name']) ?></strong>
+                            <?php if (!empty($u['email'])): ?>
+                                <br><small style="color:var(--text-muted); font-size:0.75rem;"><?= sanitize($u['email']) ?></small>
+                            <?php endif; ?>
                         </td>
-                        <td><?= sanitize($u['email']) ?></td>
-                        <td><span style="color:var(--accent-gold); font-weight:600;"><?= sanitize($u['job_title']) ?></span></td>
+                        <td>
+                            <span style="color:var(--accent-gold); font-weight:700; font-family:monospace; font-size:0.95rem;">
+                                <i class="fas fa-user-tag" style="font-size:0.8rem; margin-right:4px;"></i><?= sanitize($u['username'] ?? $u['email']) ?>
+                            </span>
+                        </td>
+                        <td><span style="color:var(--text-primary); font-weight:600;"><?= sanitize($u['job_title']) ?></span></td>
                         <td>
                             <span class="badge <?= $u['role'] === 'admin' ? 'badge-on-time' : 'badge-role' ?>">
                                 <?= strtoupper($u['role']) ?>
@@ -121,7 +140,7 @@ usort($users, function($a, $b) {
                                     onclick='openEditModal(<?= json_encode($u) ?>)'>
                                     <i class="fas fa-edit"></i> Edit
                                 </button>
-                                <?php if ($u['id'] !== $_SESSION['user_id']): ?>
+                                <?php if ((int)$u['id'] !== (int)$_SESSION['user_id']): ?>
                                     <form method="POST" action="" onsubmit="return confirm('Yakin ingin menghapus akun karyawan ini?');" style="display:inline;">
                                         <input type="hidden" name="action" value="delete_user">
                                         <input type="hidden" name="id" value="<?= $u['id'] ?>">
@@ -157,8 +176,13 @@ usort($users, function($a, $b) {
             </div>
 
             <div class="form-group">
-                <label class="form-label">Email Login</label>
-                <input type="email" name="email" id="userEmail" class="form-input" required placeholder="Contoh: designer@montaseu.com">
+                <label class="form-label">Username Login (Tanpa Spasi)</label>
+                <input type="text" name="username" id="userUsername" class="form-input" required placeholder="Contoh: rian / designer">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Email (Opsional / Kontak)</label>
+                <input type="email" name="email" id="userEmail" class="form-input" placeholder="Contoh: designer@montaseu.com">
             </div>
 
             <div class="form-group">
@@ -194,6 +218,7 @@ usort($users, function($a, $b) {
         document.getElementById('formAction').value = 'add_user';
         document.getElementById('userId').value = '';
         document.getElementById('userName').value = '';
+        document.getElementById('userUsername').value = '';
         document.getElementById('userEmail').value = '';
         document.getElementById('userJobTitle').value = '';
         document.getElementById('userRole').value = 'karyawan';
@@ -208,7 +233,8 @@ usort($users, function($a, $b) {
         document.getElementById('formAction').value = 'edit_user';
         document.getElementById('userId').value = user.id;
         document.getElementById('userName').value = user.name;
-        document.getElementById('userEmail').value = user.email;
+        document.getElementById('userUsername').value = user.username || user.email.split('@')[0];
+        document.getElementById('userEmail').value = user.email || '';
         document.getElementById('userJobTitle').value = user.job_title;
         document.getElementById('userRole').value = user.role;
         document.getElementById('userPassword').value = '';

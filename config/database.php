@@ -1,7 +1,8 @@
 <?php
 /**
- * JSON File-Based Data Storage & Session Configuration (Zero Database / Vercel Serverless Compatible)
+ * Data Storage, Session, & Data Preservation Configuration
  * Montaseu Studio - Interior Design Attendance System
+ * Zero Database / Vercel Compatible with Auto-Backup & Self-Healing Data Access
  */
 
 if (ob_get_level() == 0) {
@@ -41,16 +42,79 @@ if (!@is_writable($targetUploadsDir)) {
 define('DATA_DIR', rtrim($targetDataDir, '/') . '/');
 define('UPLOADS_DIR', rtrim($targetUploadsDir, '/') . '/');
 
-// Helper untuk membaca & menulis JSON
+/**
+ * --- MEKANISME PROTEKSI & BACKUP AUTOMATIS DATA PENGGUNA ---
+ */
+
+function backupUserData($usersData) {
+    if (!is_array($usersData) || empty($usersData)) return;
+    $encoded = json_encode($usersData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+    
+    // Backup 1: File .bak di dalam DATA_DIR
+    $primaryBak = DATA_DIR . 'users.json.bak';
+    @file_put_contents($primaryBak, $encoded, LOCK_EX);
+
+    // Backup 2: Subfolder backups di DATA_DIR
+    $backupDir = DATA_DIR . 'backups/';
+    if (!file_exists($backupDir)) {
+        @mkdir($backupDir, 0777, true);
+    }
+    if (file_exists($backupDir)) {
+        @file_put_contents($backupDir . 'users_latest.json', $encoded, LOCK_EX);
+    }
+
+    // Backup 3: Persistent temp dir untuk pemulihan darurat jika struktur folder bergeser
+    $sysBak = sys_get_temp_dir() . '/montaseu_users_backup.json';
+    @file_put_contents($sysBak, $encoded, LOCK_EX);
+}
+
+function restoreUserDataFromBackup() {
+    $backupPaths = [
+        DATA_DIR . 'users.json.bak',
+        DATA_DIR . 'backups/users_latest.json',
+        sys_get_temp_dir() . '/montaseu_users_backup.json'
+    ];
+
+    foreach ($backupPaths as $path) {
+        if (file_exists($path) && filesize($path) > 0) {
+            $content = file_get_contents($path);
+            $data = json_decode($content, true);
+            if (is_array($data) && count($data) > 0) {
+                return $data;
+            }
+        }
+    }
+    return null;
+}
+
+// Helper untuk membaca & menulis JSON dengan proteksi Auto-Recovery
 function loadJSON($file, $default = []) {
     $path = DATA_DIR . $file;
-    if (!file_exists($path)) {
+    if (!file_exists($path) || filesize($path) === 0) {
+        if ($file === 'users.json') {
+            $recovered = restoreUserDataFromBackup();
+            if (!empty($recovered)) {
+                saveJSON('users.json', $recovered);
+                return $recovered;
+            }
+        }
         saveJSON($file, $default);
         return $default;
     }
+
     $content = file_get_contents($path);
     $data = json_decode($content, true);
-    return is_array($data) ? $data : $default;
+    if (!is_array($data)) {
+        if ($file === 'users.json') {
+            $recovered = restoreUserDataFromBackup();
+            if (!empty($recovered)) {
+                saveJSON('users.json', $recovered);
+                return $recovered;
+            }
+        }
+        return $default;
+    }
+    return $data;
 }
 
 function saveJSON($file, $data) {
@@ -59,9 +123,13 @@ function saveJSON($file, $data) {
     }
     $path = DATA_DIR . $file;
     file_put_contents($path, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE), LOCK_EX);
+
+    if ($file === 'users.json' && is_array($data) && !empty($data)) {
+        backupUserData($data);
+    }
 }
 
-// Inisialisasi Data Default (HANYA DIBUAT SEKALI JIKA BERKAS BELUM ADA)
+// Inisialisasi Data Default dengan Preservasi Akun Existing & Normalisasi Skema Username
 function initJSONData() {
     if (!file_exists(UPLOADS_DIR)) {
         @mkdir(UPLOADS_DIR, 0777, true);
@@ -82,21 +150,83 @@ function initJSONData() {
         saveJSON('settings.json', $defaultSettings);
     }
 
-    // Users Default: Hanya diinisialisasi jika file users.json belum pernah dibuat
+    // Standard Default Accounts (dengan Username Biasa)
+    $adminPass = password_hash('admin123', PASSWORD_DEFAULT);
+    $userPass = password_hash('user123', PASSWORD_DEFAULT);
+
+    $defaultAccounts = [
+        ['id' => 1, 'username' => 'admin', 'name' => 'Admin Montaseu', 'email' => 'admin@montaseu.com', 'password' => $adminPass, 'role' => 'admin', 'job_title' => 'Studio Manager / Admin', 'created_at' => date('Y-m-d H:i:s')],
+        ['id' => 2, 'username' => 'karyawan', 'name' => 'Karyawan Montaseu', 'email' => 'karyawan@montaseu.com', 'password' => $userPass, 'role' => 'karyawan', 'job_title' => 'Staff Interior Designer', 'created_at' => date('Y-m-d H:i:s')],
+        ['id' => 3, 'username' => 'designer', 'name' => 'Rian Pratama', 'email' => 'designer@montaseu.com', 'password' => $userPass, 'role' => 'karyawan', 'job_title' => 'Lead Interior Designer', 'created_at' => date('Y-m-d H:i:s')],
+        ['id' => 4, 'username' => 'architect', 'name' => 'Siti Amalia', 'email' => 'architect@montaseu.com', 'password' => $userPass, 'role' => 'karyawan', 'job_title' => 'Senior Project Architect', 'created_at' => date('Y-m-d H:i:s')],
+        ['id' => 5, 'username' => 'supervisor', 'name' => 'Budi Santoso', 'email' => 'supervisor@montaseu.com', 'password' => $userPass, 'role' => 'karyawan', 'job_title' => 'Site Supervisor', 'created_at' => date('Y-m-d H:i:s')]
+    ];
+
     $usersPath = DATA_DIR . 'users.json';
     if (!file_exists($usersPath)) {
-        $adminPass = password_hash('admin123', PASSWORD_DEFAULT);
-        $userPass = password_hash('user123', PASSWORD_DEFAULT);
-
-        $defaultAccounts = [
-            ['id' => 1, 'name' => 'Admin Montaseu', 'email' => 'admin@montaseu.com', 'password' => $adminPass, 'role' => 'admin', 'job_title' => 'Studio Manager / Admin', 'created_at' => date('Y-m-d H:i:s')],
-            ['id' => 2, 'name' => 'Karyawan Montaseu', 'email' => 'karyawan@montaseu.com', 'password' => $userPass, 'role' => 'karyawan', 'job_title' => 'Staff Interior Designer', 'created_at' => date('Y-m-d H:i:s')],
-            ['id' => 3, 'name' => 'Rian Pratama', 'email' => 'designer@montaseu.com', 'password' => $userPass, 'role' => 'karyawan', 'job_title' => 'Lead Interior Designer', 'created_at' => date('Y-m-d H:i:s')],
-            ['id' => 4, 'name' => 'Siti Amalia', 'email' => 'architect@montaseu.com', 'password' => $userPass, 'role' => 'karyawan', 'job_title' => 'Senior Project Architect', 'created_at' => date('Y-m-d H:i:s')],
-            ['id' => 5, 'name' => 'Budi Santoso', 'email' => 'supervisor@montaseu.com', 'password' => $userPass, 'role' => 'karyawan', 'job_title' => 'Site Supervisor', 'created_at' => date('Y-m-d H:i:s')]
-        ];
-        saveJSON('users.json', $defaultAccounts);
+        $recovered = restoreUserDataFromBackup();
+        if (!empty($recovered)) {
+            $existingUsers = $recovered;
+        } else {
+            $existingUsers = $defaultAccounts;
+        }
+    } else {
+        $existingUsers = loadJSON('users.json', []);
     }
+
+    if (empty($existingUsers)) {
+        $existingUsers = $defaultAccounts;
+    }
+
+    // Normalisasi struktur data & Penggabungan aman (Safe Merge)
+    $usernamesMap = [];
+    $emailsMap = [];
+    $idsMap = [];
+    $maxId = 0;
+
+    foreach ($existingUsers as &$u) {
+        if (!isset($u['username']) || empty($u['username'])) {
+            // Auto-generate username dari bagian depan email jika belum ada
+            if (!empty($u['email'])) {
+                $parts = explode('@', $u['email']);
+                $u['username'] = strtolower(trim($parts[0]));
+            } else {
+                $u['username'] = 'user' . $u['id'];
+            }
+        }
+        if (!isset($u['role'])) $u['role'] = 'karyawan';
+        if (!isset($u['job_title'])) $u['job_title'] = 'Staff Interior';
+        if (!isset($u['avatar'])) $u['avatar'] = null;
+        if (!isset($u['created_at'])) $u['created_at'] = date('Y-m-d H:i:s');
+
+        $usernamesMap[strtolower($u['username'])] = true;
+        if (!empty($u['email'])) {
+            $emailsMap[strtolower($u['email'])] = true;
+        }
+        $idsMap[(int)$u['id']] = true;
+        if ((int)$u['id'] > $maxId) {
+            $maxId = (int)$u['id'];
+        }
+    }
+    unset($u);
+
+    // Tambahkan default account HANYA jika username-nya belum ada
+    foreach ($defaultAccounts as $def) {
+        if (!isset($usernamesMap[strtolower($def['username'])])) {
+            $newId = $def['id'];
+            if (isset($idsMap[$newId])) {
+                $maxId++;
+                $newId = $maxId;
+            }
+            $def['id'] = $newId;
+            $existingUsers[] = $def;
+            $usernamesMap[strtolower($def['username'])] = true;
+            $idsMap[$newId] = true;
+        }
+    }
+
+    saveJSON('users.json', $existingUsers);
+    backupUserData($existingUsers);
 
     // Attendances Default File
     if (!file_exists(DATA_DIR . 'attendances.json')) {
@@ -106,7 +236,7 @@ function initJSONData() {
 
 initJSONData();
 
-// --- DATA ACCESS API FUNCTIONS (JSON BASED) ---
+// --- DATA ACCESS API FUNCTIONS ---
 
 function getSettings() {
     return loadJSON('settings.json', []);
@@ -123,49 +253,85 @@ function getUsers() {
     return loadJSON('users.json', []);
 }
 
-function getUserByEmail($email) {
+function getUserByUsername($username) {
     $users = getUsers();
+    $input = strtolower(trim((string)$username));
+    if (empty($input)) return null;
+
     foreach ($users as $u) {
-        if (strtolower($u['email']) === strtolower($email)) {
+        $uUsername = isset($u['username']) ? strtolower(trim($u['username'])) : '';
+        $uEmail = isset($u['email']) ? strtolower(trim($u['email'])) : '';
+        if ($uUsername === $input || $uEmail === $input) {
             return $u;
         }
     }
     return null;
+}
+
+function getUserByEmail($email) {
+    return getUserByUsername($email);
 }
 
 function getUserById($id) {
     $users = getUsers();
     foreach ($users as $u) {
-        if ($u['id'] == $id) {
+        if ((int)$u['id'] === (int)$id) {
             return $u;
         }
     }
     return null;
 }
 
-function saveUser($name, $email, $password, $role, $jobTitle, $id = null) {
+function saveUser($name, $username, $password, $role, $jobTitle, $email = '', $id = null) {
     $users = getUsers();
-    if ($id) {
+    $usernameClean = trim((string)$username);
+    $usernameLower = strtolower($usernameClean);
+
+    if (empty($email)) {
+        $email = $usernameLower . '@montaseu.com';
+    }
+
+    // Cegah duplikasi username dengan akun lain
+    foreach ($users as $u) {
+        if ($id !== null && (int)$u['id'] === (int)$id) continue;
+        $uUsername = isset($u['username']) ? strtolower(trim($u['username'])) : '';
+        if (!empty($usernameLower) && $uUsername === $usernameLower) {
+            return false; // Username sudah dipakai
+        }
+    }
+
+    if ($id !== null && (int)$id > 0) {
+        $updated = false;
         foreach ($users as &$u) {
-            if ($u['id'] == $id) {
+            if ((int)$u['id'] === (int)$id) {
                 $u['name'] = $name;
+                $u['username'] = $usernameClean;
                 $u['email'] = $email;
                 $u['role'] = $role;
                 $u['job_title'] = $jobTitle;
                 if (!empty($password)) {
                     $u['password'] = password_hash($password, PASSWORD_DEFAULT);
                 }
-                saveJSON('users.json', $users);
-                return $u;
+                if (!isset($u['avatar'])) $u['avatar'] = null;
+                if (!isset($u['created_at'])) $u['created_at'] = date('Y-m-d H:i:s');
+                $updated = true;
+                break;
             }
+        }
+        unset($u);
+
+        if ($updated) {
+            saveJSON('users.json', $users);
+            return getUserById($id);
         }
     } else {
         $maxId = 0;
         foreach ($users as $u) {
-            if ($u['id'] > $maxId) $maxId = $u['id'];
+            if ((int)$u['id'] > $maxId) $maxId = (int)$u['id'];
         }
         $newUser = [
             'id' => $maxId + 1,
+            'username' => $usernameClean,
             'name' => $name,
             'email' => $email,
             'password' => password_hash($password, PASSWORD_DEFAULT),
@@ -184,7 +350,7 @@ function saveUser($name, $email, $password, $role, $jobTitle, $id = null) {
 function deleteUser($id) {
     $users = getUsers();
     $newUsers = array_filter($users, function($u) use ($id) {
-        return $u['id'] != $id;
+        return (int)$u['id'] !== (int)$id;
     });
     saveJSON('users.json', array_values($newUsers));
     return true;
@@ -205,7 +371,7 @@ function getAttendanceById($id) {
 function getTodayAttendance($userId, $date) {
     $attendances = getAttendances();
     foreach ($attendances as $a) {
-        if ($a['user_id'] == $userId && $a['date'] === $date) {
+        if ((int)$a['user_id'] === (int)$userId && $a['date'] === $date) {
             return $a;
         }
     }

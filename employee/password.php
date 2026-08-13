@@ -23,7 +23,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         $user = getUserById($userId);
         if ($user && password_verify($oldPassword, $user['password'])) {
-            saveUser($user['name'], $user['email'], $newPassword, $user['role'], $user['job_title'], $userId);
+            $username = $user['username'] ?? str_replace('@montaseu.com', '', $user['email']);
+            saveUser($user['name'], $username, $newPassword, $user['role'], $user['job_title'], $user['email'] ?? '', $userId);
             $message = 'Password Anda berhasil diperbarui!';
         } else {
             $error = 'Password lama yang Anda masukkan salah. Silakan periksa kembali.';

@@ -15,18 +15,19 @@ $error = '';
 $msg = $_GET['msg'] ?? '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $email = sanitize($_POST['email'] ?? '');
+    $username = sanitize($_POST['username'] ?? '');
     $password = $_POST['password'] ?? '';
 
-    if (empty($email) || empty($password)) {
-        $error = 'Email dan Password wajib diisi!';
+    if (empty($username) || empty($password)) {
+        $error = 'Username dan Password wajib diisi!';
     } else {
-        $user = getUserByEmail($email);
+        $user = getUserByUsername($username);
 
         if ($user && password_verify($password, $user['password'])) {
             $_SESSION['user_id'] = $user['id'];
             $_SESSION['user_name'] = $user['name'];
-            $_SESSION['email'] = $user['email'];
+            $_SESSION['username'] = $user['username'] ?? $username;
+            $_SESSION['email'] = $user['email'] ?? '';
             $_SESSION['role'] = $user['role'];
             $_SESSION['job_title'] = $user['job_title'];
 
@@ -38,7 +39,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             exit();
         } else {
-            $error = 'Email atau Password salah. Silakan periksa kembali.';
+            $error = 'Username atau Password salah. Silakan periksa kembali.';
         }
     }
 }
@@ -76,8 +77,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     <form method="POST" action="">
         <div class="form-group">
-            <label class="form-label" for="email"><i class="fas fa-envelope" style="color:var(--accent-gold);"></i> Alamat Email</label>
-            <input type="email" name="email" id="email" class="form-input" placeholder="Masukkan email Anda" required value="<?= sanitize($_POST['email'] ?? '') ?>">
+            <label class="form-label" for="username"><i class="fas fa-user" style="color:var(--accent-gold);"></i> Username Login</label>
+            <input type="text" name="username" id="username" class="form-input" placeholder="Masukkan username Anda" required value="<?= sanitize($_POST['username'] ?? '') ?>">
         </div>
 
         <div class="form-group">
