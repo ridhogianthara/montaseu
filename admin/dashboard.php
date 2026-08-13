@@ -95,29 +95,32 @@ usort($todayFullList, function($a, $b) {
                     <th colspan="3" style="background: rgba(197, 168, 128, 0.15); text-align:center; color:var(--accent-gold); border-bottom:1px solid rgba(197, 168, 128, 0.3);">
                         <i class="fas fa-sign-out-alt"></i> DETAIL ABSEN PULANG
                     </th>
-                    <th rowspan="2" style="vertical-align:middle; text-align:center;">Tipe Lokasi</th>
                 </tr>
                 <tr>
                     <!-- Sub-header Masuk -->
                     <th style="background: rgba(16, 185, 129, 0.08); font-size:0.75rem;">Foto Masuk</th>
-                    <th style="background: rgba(16, 185, 129, 0.08); font-size:0.75rem;">Jam & Status</th>
+                    <th style="background: rgba(16, 185, 129, 0.08); font-size:0.75rem;">Jam, Status & Lokasi</th>
                     <th style="background: rgba(16, 185, 129, 0.08); font-size:0.75rem;">Peta Masuk</th>
                     
                     <!-- Sub-header Pulang -->
                     <th style="background: rgba(197, 168, 128, 0.08); font-size:0.75rem;">Foto Pulang</th>
-                    <th style="background: rgba(197, 168, 128, 0.08); font-size:0.75rem;">Jam & Durasi</th>
+                    <th style="background: rgba(197, 168, 128, 0.08); font-size:0.75rem;">Jam, Durasi & Lokasi</th>
                     <th style="background: rgba(197, 168, 128, 0.08); font-size:0.75rem;">Peta Pulang</th>
                 </tr>
             </thead>
             <tbody>
                 <?php if (empty($todayFullList)): ?>
                     <tr>
-                        <td colspan="8" style="text-align:center; padding:3rem; color:var(--text-muted);">
+                        <td colspan="7" style="text-align:center; padding:3rem; color:var(--text-muted);">
                             Belum ada presensi karyawan yang masuk hari ini.
                         </td>
                     </tr>
                 <?php else: ?>
                     <?php foreach ($todayFullList as $row): ?>
+                        <?php 
+                            $inLocType = $row['clock_in_location_type'] ?? $row['location_type'] ?? 'Studio Office';
+                            $outLocType = $row['clock_out_location_type'] ?? ($row['clock_out_time'] ? 'Studio Office' : '-');
+                        ?>
                         <tr>
                             <td>
                                 <strong style="color:var(--text-primary); display:block;"><?= sanitize($row['name']) ?></strong>
@@ -137,6 +140,7 @@ usort($todayFullList, function($a, $b) {
                                 <span class="badge <?= $row['clock_in_status'] === 'On Time' ? 'badge-on-time' : 'badge-late' ?>" style="font-size:0.7rem;">
                                     <?= $row['clock_in_status'] ?>
                                 </span>
+                                <span class="badge badge-role" style="font-size:0.65rem; display:block; margin-top:3px;" title="Lokasi Masuk"><?= sanitize($inLocType) ?></span>
                             </td>
                             <td style="background: rgba(16, 185, 129, 0.03); text-align:center;">
                                 <?php if ($row['clock_in_lat'] && $row['clock_in_lng']): ?>
@@ -160,6 +164,7 @@ usort($todayFullList, function($a, $b) {
                                 <?php if ($row['clock_out_time']): ?>
                                     <div style="font-weight:700; color:var(--text-primary);"><?= date('H:i', strtotime($row['clock_out_time'])) . ' WIB' ?></div>
                                     <div style="font-size:0.75rem; color:var(--accent-gold); font-weight:600;"><?= $row['work_duration'] ?: '-' ?></div>
+                                    <span class="badge badge-role" style="font-size:0.65rem; display:block; margin-top:3px;" title="Lokasi Pulang"><?= sanitize($outLocType) ?></span>
                                 <?php else: ?>
                                     <span style="color:var(--text-muted); font-size:0.8rem;">--:--</span>
                                 <?php endif; ?>
@@ -173,8 +178,6 @@ usort($todayFullList, function($a, $b) {
                                     <span style="color:var(--text-muted); font-size:0.75rem;">-</span>
                                 <?php endif; ?>
                             </td>
-
-                            <td style="text-align:center;"><span class="badge badge-role"><?= sanitize($row['location_type']) ?></span></td>
                         </tr>
                     <?php endforeach; ?>
                 <?php endif; ?>

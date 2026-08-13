@@ -166,22 +166,25 @@ $settings = getSettings();
                 <tr>
                     <th>Tanggal</th>
                     <th>Foto Masuk</th>
-                    <th>Jam Masuk & Status</th>
+                    <th>Jam, Status & Lokasi Masuk</th>
                     <th>Foto Pulang</th>
-                    <th>Jam Pulang & Durasi</th>
-                    <th>Tipe Lokasi</th>
+                    <th>Jam, Durasi & Lokasi Pulang</th>
                     <th>Peta GPS</th>
                 </tr>
             </thead>
             <tbody>
                 <?php if (empty($recentList)): ?>
                     <tr>
-                        <td colspan="7" style="text-align:center; color:var(--text-muted); padding:2rem;">
+                        <td colspan="6" style="text-align:center; color:var(--text-muted); padding:2rem;">
                             Belum ada riwayat presensi tercatat.
                         </td>
                     </tr>
                 <?php else: ?>
                     <?php foreach ($recentList as $r): ?>
+                        <?php 
+                            $inLocType = $r['clock_in_location_type'] ?? $r['location_type'] ?? 'Studio Office';
+                            $outLocType = $r['clock_out_location_type'] ?? ($r['clock_out_time'] ? 'Studio Office' : '-');
+                        ?>
                         <tr>
                             <td><strong><?= date('d/m/Y', strtotime($r['date'])) ?></strong></td>
                             
@@ -194,11 +197,14 @@ $settings = getSettings();
                                 <?php endif; ?>
                             </td>
                             
-                            <!-- Jam Masuk -->
+                            <!-- Jam & Lokasi Masuk -->
                             <td>
                                 <div style="font-weight:700; color:var(--text-primary);"><?= $r['clock_in_time'] ? date('H:i', strtotime($r['clock_in_time'])) . ' WIB' : '-' ?></div>
                                 <span class="badge <?= $r['clock_in_status'] === 'On Time' ? 'badge-on-time' : 'badge-late' ?>" style="font-size:0.7rem;">
                                     <?= $r['clock_in_status'] ?>
+                                </span>
+                                <span class="badge badge-role" style="font-size:0.65rem; display:block; margin-top:4px;" title="Lokasi Masuk">
+                                    <i class="fas fa-building"></i> <?= sanitize($inLocType) ?>
                                 </span>
                             </td>
 
@@ -211,17 +217,18 @@ $settings = getSettings();
                                 <?php endif; ?>
                             </td>
 
-                            <!-- Jam Pulang -->
+                            <!-- Jam & Lokasi Pulang -->
                             <td>
                                 <?php if ($r['clock_out_time']): ?>
                                     <div style="font-weight:700; color:var(--text-primary);"><?= date('H:i', strtotime($r['clock_out_time'])) . ' WIB' ?></div>
                                     <div style="font-size:0.75rem; color:var(--accent-gold); font-weight:600;"><?= $r['work_duration'] ?: '-' ?></div>
+                                    <span class="badge badge-role" style="font-size:0.65rem; display:block; margin-top:4px;" title="Lokasi Pulang">
+                                        <i class="fas fa-building"></i> <?= sanitize($outLocType) ?>
+                                    </span>
                                 <?php else: ?>
                                     <span style="color:var(--text-muted); font-size:0.8rem;">--:--</span>
                                 <?php endif; ?>
                             </td>
-
-                            <td><span class="badge badge-role"><?= sanitize($r['location_type']) ?></span></td>
 
                             <!-- Peta -->
                             <td>
