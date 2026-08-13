@@ -205,8 +205,10 @@ $settings = getSettings();
                 .then(data => {
                     if (data && data.display_name) {
                         const addrEl = document.getElementById('office_address');
-                        if (addrEl && (!addrEl.value || addrEl.value.trim() === '' || addrEl.value.includes('Senopati'))) {
+                        if (addrEl) {
                             addrEl.value = data.display_name;
+                            addrEl.style.borderColor = 'var(--accent-gold)';
+                            setTimeout(() => { addrEl.style.borderColor = 'var(--border-color)'; }, 1500);
                         }
                     }
                 })
