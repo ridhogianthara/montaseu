@@ -30,7 +30,7 @@ $settings = getSettings();
 <div style="margin-bottom: 2rem;">
     <h1 class="brand-title" style="font-size: 1.8rem; margin-bottom: 4px;">Pengaturan Studio & Geofencing</h1>
     <p style="color: var(--text-secondary); font-size: 0.9rem;">
-        Konfigurasi Koordinat GPS Kantor Montaseu Studio, Integrasi Pencarian Google Maps, & Jam Operasional
+        Konfigurasi Koordinat GPS Kantor Montaseu Studio, Pencarian Tempat Terdaftar Google Maps, & Jam Operasional
     </p>
 </div>
 
@@ -92,33 +92,44 @@ $settings = getSettings();
             </button>
         </div>
 
-        <!-- Interactive Map Picker & Google Maps Search Engine -->
+        <!-- Interactive Map Picker & Google Places Search Engine -->
         <div class="card-studio">
             <div class="card-title" style="margin-bottom:0.75rem;">
-                <i class="fas fa-map-marker-alt" style="color:var(--accent-gold);"></i> Pick Point & Pencarian Google Maps
+                <i class="fas fa-map-marked-alt" style="color:var(--accent-gold);"></i> Pencarian Tempat Terdaftar Google Maps
             </div>
 
-            <!-- Google Maps Assistance Info -->
+            <!-- Google Maps Info Box -->
             <div style="background: rgba(197, 168, 128, 0.08); border:1px solid var(--border-color); border-radius:8px; padding:10px; margin-bottom:0.75rem; font-size:0.8rem; color:var(--text-secondary);">
-                <i class="fab fa-google" style="color:var(--accent-gold);"></i> <strong>Pencarian Cerdas Google Maps:</strong><br>
-                Ketik alamat jalan/kota (misal: <em>Jl. Kinanti Lengkong Bandung</em>) atau <strong>tempelkan Link / Koordinat Google Maps</strong> (contoh: <code>-6.9363, 107.6282</code>).
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+                    <div>
+                        <i class="fab fa-google" style="color:var(--accent-gold);"></i> <strong>Cari Tempat & Gedung Terdaftar:</strong><br>
+                        Ketik nama gedung/tempat terdaftar di Google Maps (misal: <em>Gedung Sate, Kinanti Bandung, Trans Studio</em>) atau <strong>tempelkan Link / Koordinat Google Maps</strong>.
+                    </div>
+                    <a href="https://www.google.com/maps" target="_blank" class="btn-gold" style="font-size:0.7rem; padding:4px 8px; text-decoration:none; white-space:nowrap;">
+                        <i class="fas fa-external-link-alt"></i> Buka Google Maps
+                    </a>
+                </div>
             </div>
 
-            <!-- Real-Time Smart Search Input -->
-            <div style="display:flex; gap:8px; margin-bottom:0.75rem;">
-                <input type="text" id="search-address-input" class="form-input" placeholder="Cari alamat atau tempel koordinat/link Google Maps..." style="font-size:0.85rem;" onkeypress="if(event.key === 'Enter') { event.preventDefault(); searchLocationOnMap(); }">
-                <button type="button" onclick="searchLocationOnMap()" class="btn-gold" style="font-size:0.8rem; padding:6px 14px; flex-shrink:0;">
-                    <i class="fas fa-search"></i> Cari
-                </button>
+            <!-- Real-Time Places Search Input with Auto-complete -->
+            <div style="position:relative; margin-bottom:0.75rem;">
+                <div style="display:flex; gap:8px;">
+                    <input type="text" id="search-address-input" class="form-input" placeholder="Ketik nama tempat/gedung/jalan (misal: Kinanti Bandung, Gedung Sate)..." style="font-size:0.85rem;" oninput="onPlaceInput(this.value)" onkeypress="if(event.key === 'Enter') { event.preventDefault(); searchLocationOnMap(); }">
+                    <button type="button" onclick="searchLocationOnMap()" class="btn-gold" style="font-size:0.8rem; padding:6px 14px; flex-shrink:0;">
+                        <i class="fas fa-search"></i> Cari
+                    </button>
+                </div>
+
+                <!-- Auto-complete suggestion list dropdown -->
+                <div id="search-results-list" style="display:none; position:absolute; left:0; right:0; top:100%; z-index:1000; background:#181C23; border:1px solid var(--border-color); border-radius:8px; max-height:220px; overflow-y:auto; font-size:0.8rem; box-shadow:0 10px 25px rgba(0,0,0,0.5); margin-top:4px;"></div>
             </div>
-            <div id="search-results-list" style="display:none; background:var(--bg-card); border:1px solid var(--border-color); border-radius:6px; max-height:180px; overflow-y:auto; margin-bottom:0.75rem; font-size:0.8rem; padding:4px;"></div>
 
             <!-- Button Detect Current Admin GPS -->
             <button type="button" id="btn-detect-gps" onclick="useAdminCurrentLocation()" class="btn-secondary" style="font-size:0.8rem; width:100%; margin-bottom:0.75rem;">
                 <i class="fas fa-crosshairs" style="color:var(--accent-gold);"></i> Gunakan Lokasi GPS Saya Saat Ini
             </button>
 
-            <div id="office-map-picker" style="width:100%; height:320px; border-radius:var(--radius-md); border:1px solid var(--border-color);"></div>
+            <div id="office-map-picker" style="width:100%; height:310px; border-radius:var(--radius-md); border:1px solid var(--border-color);"></div>
         </div>
     </div>
 </form>
@@ -126,6 +137,7 @@ $settings = getSettings();
 <script>
     let map = null;
     let marker = null;
+    let searchDebounceTimer = null;
 
     document.addEventListener('DOMContentLoaded', function() {
         const curLat = parseFloat(document.getElementById('office_lat').value) || -6.230588;
@@ -133,8 +145,21 @@ $settings = getSettings();
 
         map = L.map('office-map-picker').setView([curLat, curLng], 16);
 
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        // OpenStreetMap Layer
+        const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; Montaseu Studio'
+        });
+
+        // Satellite Tile Layer (Esri World Imagery)
+        const satLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+            attribution: 'Tiles &copy; Esri &mdash; Montaseu Studio'
+        });
+
+        osmLayer.addTo(map);
+
+        L.control.layers({
+            "Peta Standar": osmLayer,
+            "Satelit Google/Esri": satLayer
         }).addTo(map);
 
         marker = L.marker([curLat, curLng], { draggable: true }).addTo(map)
@@ -150,16 +175,14 @@ $settings = getSettings();
             updateCoordinates(e.latlng.lat, e.latlng.lng, true);
         });
 
-        // Auto-detect Admin GPS location on page load if default values
-        if (navigator.geolocation && (curLat === -6.230588 || curLat === 0)) {
-            navigator.geolocation.getCurrentPosition(function(pos) {
-                const lat = pos.coords.latitude;
-                const lng = pos.coords.longitude;
-                updateCoordinates(lat, lng, true);
-            }, function(err) {
-                console.log("GPS auto-detect skipped:", err.message);
-            }, { enableHighAccuracy: true, timeout: 5000 });
-        }
+        // Close search suggestion dropdown when clicking outside
+        document.addEventListener('click', function(e) {
+            const searchInput = document.getElementById('search-address-input');
+            const searchResults = document.getElementById('search-results-list');
+            if (searchResults && !searchResults.contains(e.target) && e.target !== searchInput) {
+                searchResults.style.display = 'none';
+            }
+        });
     });
 
     function updateCoordinates(lat, lng, doReverseGeocode = false) {
@@ -215,68 +238,104 @@ $settings = getSettings();
         }, { enableHighAccuracy: true, timeout: 10000 });
     }
 
-    function searchLocationOnMap() {
+    function onPlaceInput(val) {
+        clearTimeout(searchDebounceTimer);
+        const resultsEl = document.getElementById('search-results-list');
+
+        if (!val || val.trim().length < 2) {
+            if (resultsEl) resultsEl.style.display = 'none';
+            return;
+        }
+
+        searchDebounceTimer = setTimeout(function() {
+            searchLocationOnMap(true);
+        }, 350);
+    }
+
+    function searchLocationOnMap(isAutoSuggest = false) {
         const query = document.getElementById('search-address-input').value.trim();
         const resultsEl = document.getElementById('search-results-list');
 
         if (!query) {
-            alert("Masukkan alamat, nama jalan, atau tempel link/koordinat Google Maps.");
+            if (!isAutoSuggest) alert("Masukkan nama tempat, gedung, atau tempel link/koordinat Google Maps.");
             return;
         }
 
-        resultsEl.style.display = 'block';
-        resultsEl.innerHTML = '<div style="padding:10px; color:var(--text-muted);"><i class="fas fa-spinner fa-spin"></i> Mencari lokasi via Smart Engine (Google Maps & Multi-Geocoding)...</div>';
+        if (resultsEl) {
+            resultsEl.style.display = 'block';
+            resultsEl.innerHTML = '<div style="padding:10px; color:var(--text-muted);"><i class="fas fa-spinner fa-spin"></i> Mencari tempat terdaftar...</div>';
+        }
 
-        // Check 1: Google Maps URL / Raw Coordinates Parser (e.g. -6.9363, 107.6282 or @-6.9363,107.6282)
+        // Check 1: Direct Coordinates / Google Maps Link Parser (e.g. -6.9025, 107.6190 or @-6.9025,107.6190)
         const coordMatch = query.match(/(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)/);
         if (coordMatch) {
             const lat = parseFloat(coordMatch[1]);
             const lng = parseFloat(coordMatch[2]);
             if (!isNaN(lat) && !isNaN(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180) {
                 selectSearchResult(lat, lng, `Koordinat Google Maps (${lat}, ${lng})`);
-                resultsEl.innerHTML = `<div style="padding:10px; color:#10B981;"><strong><i class="fas fa-check-circle"></i> Koordinat Google Maps Terdeteksi:</strong> ${lat}, ${lng}</div>`;
+                if (resultsEl) resultsEl.innerHTML = `<div style="padding:10px; color:#10B981;"><strong><i class="fas fa-check-circle"></i> Koordinat Google Maps Terdeteksi:</strong> ${lat}, ${lng}</div>`;
                 return;
             }
         }
 
-        // Helper to format Photon Geocoding results
-        function parsePhotonResults(json) {
+        // Format Photon POI Place results
+        function parsePhotonPlaces(json) {
             if (!json || !json.features || json.features.length === 0) return [];
             return json.features.map(f => {
-                const props = f.properties || {};
+                const p = f.properties || {};
                 const coords = f.geometry ? f.geometry.coordinates : [0, 0];
-                const nameParts = [props.name, props.district, props.city || props.county, props.state].filter(Boolean);
+                
+                // Build crisp place label
+                let placeTitle = p.name || p.street || p.district || 'Tempat Terdaftar';
+                let placeSub = [p.street, p.district, p.city || p.county, p.state].filter(Boolean).join(', ');
+                
+                let iconClass = 'fa-building';
+                if (p.osm_key === 'tourism' || p.osm_key === 'historic') iconClass = 'fa-landmark';
+                if (p.osm_key === 'amenity' || p.osm_key === 'shop') iconClass = 'fa-store';
+
                 return {
                     lat: coords[1],
                     lon: coords[0],
-                    display_name: nameParts.join(', ') || props.name || 'Lokasi Terdeteksi'
+                    title: placeTitle,
+                    sub: placeSub,
+                    icon: iconClass,
+                    display_name: (p.name ? p.name + ' - ' : '') + placeSub
                 };
             });
         }
 
+        // Clean query (strip exact house numbers for broader place matching)
         const cleanQuery = query.replace(/^jl\.?\s*/i, 'Jalan ').replace(/no\.?\s*\d+/gi, '').trim();
 
-        // Multi-Engine Search: Photon API (Fast & Typo Tolerant for ID) -> Nominatim -> Relaxed Query
-        fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(query)}`)
+        // Multi-Geocoding Engine Query (Photon POI Places -> Nominatim -> Relaxed Places)
+        fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&limit=7`)
             .then(res => res.json())
             .then(data => {
-                let items = parsePhotonResults(data);
+                let places = parsePhotonPlaces(data);
 
-                if (items.length > 0) {
-                    renderSearchResults(items);
+                if (places.length > 0) {
+                    renderPlacesDropdown(places);
                 } else {
-                    fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5`)
+                    fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(cleanQuery)}&limit=7`)
                         .then(res => res.json())
-                        .then(nomData => {
-                            if (nomData && nomData.length > 0) {
-                                renderSearchResults(nomData);
+                        .then(relaxData => {
+                            let relaxPlaces = parsePhotonPlaces(relaxData);
+                            if (relaxPlaces.length > 0) {
+                                renderPlacesDropdown(relaxPlaces);
                             } else {
-                                fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(cleanQuery)}`)
+                                fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5`)
                                     .then(res => res.json())
-                                    .then(relaxData => {
-                                        let relaxItems = parsePhotonResults(relaxData);
-                                        if (relaxItems.length > 0) {
-                                            renderSearchResults(relaxItems);
+                                    .then(nomData => {
+                                        if (nomData && nomData.length > 0) {
+                                            let nomPlaces = nomData.map(n => ({
+                                                lat: parseFloat(n.lat),
+                                                lon: parseFloat(n.lon),
+                                                title: n.display_name.split(',')[0],
+                                                sub: n.display_name,
+                                                icon: 'fa-map-marker-alt',
+                                                display_name: n.display_name
+                                            }));
+                                            renderPlacesDropdown(nomPlaces);
                                         } else {
                                             renderNoResultHelp(query);
                                         }
@@ -288,38 +347,49 @@ $settings = getSettings();
                 }
             })
             .catch(err => {
-                console.error("Geocoding error:", err);
+                console.error("Place search error:", err);
                 renderNoResultHelp(query);
             });
     }
 
-    function renderSearchResults(items) {
+    function renderPlacesDropdown(items) {
         const resultsEl = document.getElementById('search-results-list');
+        if (!resultsEl) return;
+
         let html = '';
-        items.slice(0, 5).forEach(item => {
+        items.forEach(item => {
             html += `
-                <div style="padding:10px; border-bottom:1px solid var(--border-color); cursor:pointer; color:var(--text-primary);" onmouseover="this.style.background='rgba(197,168,128,0.15)'" onmouseout="this.style.background='transparent'" onclick="selectSearchResult(${item.lat}, ${item.lon || item.lng}, '${addslashes(item.display_name)}')">
-                    <i class="fas fa-map-marker-alt" style="color:var(--accent-gold); margin-right:6px;"></i>
-                    <strong>${escapeHtml(item.display_name)}</strong>
+                <div style="padding:10px 12px; border-bottom:1px solid var(--border-color); cursor:pointer; color:var(--text-primary); transition:background 0.15s;" onmouseover="this.style.background='rgba(197,168,128,0.2)'" onmouseout="this.style.background='transparent'" onclick="selectSearchResult(${item.lat}, ${item.lon}, '${addslashes(item.display_name)}')">
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <i class="fas ${item.icon}" style="color:var(--accent-gold); font-size:0.9rem; flex-shrink:0;"></i>
+                        <div>
+                            <strong style="color:var(--accent-gold); font-size:0.85rem; display:block;">${escapeHtml(item.title)}</strong>
+                            <span style="font-size:0.75rem; color:var(--text-muted);">${escapeHtml(item.sub)}</span>
+                        </div>
+                    </div>
                 </div>
             `;
         });
         resultsEl.innerHTML = html;
+        resultsEl.style.display = 'block';
     }
 
     function renderNoResultHelp(query) {
         const resultsEl = document.getElementById('search-results-list');
+        if (!resultsEl) return;
+
         resultsEl.innerHTML = `
             <div style="padding:12px; color:#F87171; font-size:0.85rem;">
-                <strong><i class="fas fa-exclamation-triangle"></i> Alamat belum terindeks otomatis.</strong><br>
-                <div style="margin-top:6px; color:var(--text-secondary);">
-                    <strong>Pilihan Mudah Pengubahan Lokasi:</strong><br>
-                    1. Hapus nomor rumah/detil, ketik nama jalan & kota saja (contoh: <code>Kinanti Bandung</code>).<br>
-                    2. Atau tempelkan <strong>Koordinat / Link Google Maps</strong> (contoh: <code>-6.9363, 107.6282</code>).<br>
-                    3. Atau buka <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}" target="_blank" style="color:var(--accent-gold); text-decoration:underline;">Google Maps <i class="fas fa-external-link-alt"></i></a> lalu salin koordinatnya.
+                <strong><i class="fas fa-exclamation-triangle"></i> Tempat terdaftar belum ditemukan.</strong><br>
+                <div style="margin-top:6px; color:var(--text-secondary); line-height:1.4;">
+                    <strong>Petunjuk Mudah Pengubahan Lokasi Kantor:</strong><br>
+                    1. Salin & tempelkan <strong>Link / Koordinat dari Google Maps</strong> ke dalam kotak di atas (contoh: <code>-6.9025, 107.6190</code>).<br>
+                    2. Atau ketikkan kata kunci lebih umum, contoh: <code>Kinanti Bandung</code> atau <code>Lengkong Bandung</code>.<br>
+                    3. Atau klik <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}" target="_blank" style="color:var(--accent-gold); text-decoration:underline;">Buka Google Maps <i class="fas fa-external-link-alt"></i></a> untuk memilih tempat dan salin koordinatnya.
                 </div>
             </div>
         `;
+        resultsEl.style.display = 'block';
     }
 
     function selectSearchResult(lat, lng, address) {
