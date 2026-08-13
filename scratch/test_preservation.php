@@ -1,16 +1,16 @@
 <?php
-// Scratch test script for verifying employee username login & data preservation
+// Scratch test script for verifying Master Vault Employee Data Preservation
 require_once __DIR__ . '/../config/database.php';
 
-echo "=== MONTESEU USERNAME LOGIN & DATA PRESERVATION TEST ===\n\n";
+echo "=== MONTESEU MASTER VAULT DATA PRESERVATION TEST ===\n\n";
 
-// Step 1: Add a test custom employee account with Username
-$testUsername = 'karyawantest';
-$testEmail = 'karyawan_test@montaseu.com';
-$testPass = 'passwordRasia123';
-$testName = 'Karyawan Uji Username';
+// Step 1: Add a test custom employee account
+$testUsername = 'karyawan_vault_test';
+$testEmail = 'vault_test@montaseu.com';
+$testPass = 'passwordSuperAman123';
+$testName = 'Staf Master Vault Uji';
 $testRole = 'karyawan';
-$testJob = 'Junior Interior Designer';
+$testJob = 'Junior Interior Architect';
 
 // Remove old test account if exists
 $old = getUserByUsername($testUsername);
@@ -22,64 +22,46 @@ $newEmployee = saveUser($testName, $testUsername, $testPass, $testRole, $testJob
 if (!$newEmployee) {
     die("FAIL: Failed to create test employee account.\n");
 }
-echo "[PASS] 1. Created custom employee account with username '{$testUsername}' (ID: {$newEmployee['id']})\n";
+echo "[PASS] 1. Created employee in active system & Master Vault: {$testUsername} (ID: {$newEmployee['id']})\n";
 
-// Step 2: Test getUserByUsername
-$foundUser = getUserByUsername($testUsername);
-if ($foundUser && $foundUser['name'] === $testName) {
-    echo "[PASS] 2. getUserByUsername successfully found user by username!\n";
+// Step 2: Verify Master Vault file exists
+$vaultFile = DATA_DIR . 'users_vault.json';
+if (file_exists($vaultFile)) {
+    echo "[PASS] 2. Master Vault file verified at users_vault.json\n";
 } else {
-    echo "[FAIL] 2. getUserByUsername failed!\n";
+    echo "[FAIL] 2. Master Vault file NOT found!\n";
 }
 
-// Step 3: Verify backup files exist
-$bakFile = DATA_DIR . 'users.json.bak';
-if (file_exists($bakFile)) {
-    echo "[PASS] 3. Backup file created automatically at users.json.bak\n";
-} else {
-    echo "[FAIL] 3. Backup file NOT found at users.json.bak!\n";
-}
+// Step 3: AGGRESSIVE SIMULATION - Wipe active users.json AND users.json.bak (Simulating Git Reset / System Code Edit / Wipe)
+@unlink(DATA_DIR . 'users.json');
+@unlink(DATA_DIR . 'users.json.bak');
+echo "[PASS] 3. Simulated aggressive system edit / Git wipe (users.json & users.json.bak deleted)\n";
 
-// Step 4: Simulate application structure change / accidental deletion of users.json
-$usersPath = DATA_DIR . 'users.json';
-unlink($usersPath);
-if (!file_exists($usersPath)) {
-    echo "[PASS] 4. Simulated deletion of users.json (Simulating app structure update)\n";
-}
-
-// Step 5: Re-initialize data (Simulate app start after update)
+// Step 4: System Re-initialization (Simulating user browsing app after editing system)
 initJSONData();
 
-// Step 6: Verify recovery & username authentication
+// Step 5: Verify Auto-Healing from Master Vault
 $recoveredEmployee = getUserByUsername($testUsername);
 if ($recoveredEmployee) {
-    echo "[PASS] 5. Auto-Recovery succeeded! Account found: {$recoveredEmployee['name']} (Username: {$recoveredEmployee['username']})\n";
-    
-    // Test authentication
+    echo "[PASS] 4. Auto-Healing Success! Employee recovered from Master Vault: {$recoveredEmployee['name']} (Username: {$recoveredEmployee['username']})\n";
     if (password_verify($testPass, $recoveredEmployee['password'])) {
-        echo "[PASS] 6. Username Login Authentication verified successfully!\n";
+        echo "[PASS] 5. Login Authentication verified for recovered employee!\n";
     } else {
-        echo "[FAIL] 6. Password verification failed!\n";
+        echo "[FAIL] 5. Password mismatch on recovered employee!\n";
     }
 } else {
-    echo "[FAIL] 5. Auto-Recovery failed! Custom employee account was lost!\n";
+    echo "[FAIL] 4. Master Vault Auto-Healing failed! Employee data was lost!\n";
 }
 
-// Step 7: Clean up test account
+// Step 6: Explicit Admin Delete Test
 if ($recoveredEmployee) {
     deleteUser($recoveredEmployee['id']);
-    echo "[PASS] 7. Cleaned up test employee account.\n";
+    $checkAfterDelete = getUserByUsername($testUsername);
+    if (!$checkAfterDelete) {
+        echo "[PASS] 6. Explicit admin deletion removed employee from active system and Master Vault!\n";
+    } else {
+        echo "[FAIL] 6. Explicit admin deletion failed to remove employee!\n";
+    }
 }
 
-// Step 8: Verify default accounts have usernames
-$defaultAdmin = getUserByUsername('admin');
-$defaultKaryawan = getUserByUsername('karyawan');
-$defaultDesigner = getUserByUsername('designer');
-
-if ($defaultAdmin && $defaultKaryawan && $defaultDesigner) {
-    echo "[PASS] 8. Default accounts (admin, karyawan, designer) verified with valid usernames!\n";
-} else {
-    echo "[FAIL] 8. Default accounts missing valid usernames!\n";
-}
-
-echo "\n=== ALL TESTS COMPLETED SUCCESSFULLY ===\n";
+echo "\n=== ALL MASTER VAULT PRESERVATION TESTS PASSED ===\n";

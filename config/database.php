@@ -1,8 +1,8 @@
 <?php
 /**
- * Data Storage, Session, & Data Preservation Configuration
+ * Data Storage, Session, & Master Vault Data Preservation Configuration
  * Montaseu Studio - Interior Design Attendance System
- * Zero Database / Vercel Compatible with Auto-Backup & Self-Healing Data Access
+ * Zero Database / Vercel Compatible with Master Vault Accumulator & Auto-Healing
  */
 
 if (ob_get_level() == 0) {
@@ -22,69 +22,114 @@ function getBaseUrl() {
 }
 define('BASE_URL', getBaseUrl());
 
-// Tentukan direktori penyimpanan data (fallback ke temp dir jika read-only seperti di Vercel)
+// Tentukan direktori penyimpanan data utama
 $targetDataDir = __DIR__ . '/../data/';
 if (!file_exists($targetDataDir)) {
     @mkdir($targetDataDir, 0777, true);
-}
-if (!@is_writable($targetDataDir)) {
-    $targetDataDir = sys_get_temp_dir() . '/montaseu_data/';
 }
 
 $targetUploadsDir = __DIR__ . '/../uploads/selfies/';
 if (!file_exists($targetUploadsDir)) {
     @mkdir($targetUploadsDir, 0777, true);
 }
-if (!@is_writable($targetUploadsDir)) {
-    $targetUploadsDir = sys_get_temp_dir() . '/montaseu_uploads/';
-}
 
-define('DATA_DIR', rtrim($targetDataDir, '/') . '/');
-define('UPLOADS_DIR', rtrim($targetUploadsDir, '/') . '/');
+define('DATA_DIR', rtrim(realpath($targetDataDir) ?: $targetDataDir, '/') . '/');
+define('UPLOADS_DIR', rtrim(realpath($targetUploadsDir) ?: $targetUploadsDir, '/') . '/');
 
 /**
- * --- MEKANISME PROTEKSI & BACKUP AUTOMATIS DATA PENGGUNA ---
+ * --- ARSITEKTUR MASTER DATA VAULT (AKUMULATOR PROTEKSI KARYAWAN) ---
+ * Memastikan setiap data akun karyawan yang pernah dibuat TERPANTAU DAN TERSIMPAN PERMANEN.
+ * Meskipun file users.json terhapus, tereset oleh Git, atau kodenya di-edit, Master Vault
+ * akan selalu memulihkan (auto-heal) data karyawan ke users.json secara otomatis.
  */
 
-function backupUserData($usersData) {
-    if (!is_array($usersData) || empty($usersData)) return;
-    $encoded = json_encode($usersData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
-    
-    // Backup 1: File .bak di dalam DATA_DIR
-    $primaryBak = DATA_DIR . 'users.json.bak';
-    @file_put_contents($primaryBak, $encoded, LOCK_EX);
+function getVaultUsers() {
+    $vaultPaths = [
+        DATA_DIR . 'users_vault.json',
+        DATA_DIR . 'users.json.bak',
+        DATA_DIR . 'backups/users_latest.json',
+        sys_get_temp_dir() . '/montaseu_users_vault.json'
+    ];
 
-    // Backup 2: Subfolder backups di DATA_DIR
+    $allVaultUsers = [];
+    foreach ($vaultPaths as $path) {
+        if (file_exists($path) && filesize($path) > 0) {
+            $content = @file_get_contents($path);
+            $data = json_decode($content, true);
+            if (is_array($data)) {
+                foreach ($data as $u) {
+                    if (is_array($u) && (isset($u['username']) || isset($u['email']) || isset($u['id']))) {
+                        $key = !empty($u['username']) ? strtolower(trim($u['username'])) : (!empty($u['email']) ? strtolower(trim($u['email'])) : 'id_' . $u['id']);
+                        if (!isset($allVaultUsers[$key])) {
+                            $allVaultUsers[$key] = $u;
+                        } else {
+                            $allVaultUsers[$key] = array_merge($allVaultUsers[$key], array_filter($u));
+                        }
+                    }
+                }
+            }
+        }
+    }
+    return array_values($allVaultUsers);
+}
+
+function updateVaultWithUsers($users) {
+    if (!is_array($users) || empty($users)) return;
+
+    $currentVault = getVaultUsers();
+    $vaultMap = [];
+    foreach ($currentVault as $u) {
+        $key = !empty($u['username']) ? strtolower(trim($u['username'])) : (!empty($u['email']) ? strtolower(trim($u['email'])) : 'id_' . $u['id']);
+        $vaultMap[$key] = $u;
+    }
+
+    foreach ($users as $u) {
+        if (!is_array($u)) continue;
+        $key = !empty($u['username']) ? strtolower(trim($u['username'])) : (!empty($u['email']) ? strtolower(trim($u['email'])) : 'id_' . ($u['id'] ?? 0));
+        if (isset($vaultMap[$key])) {
+            $vaultMap[$key] = array_merge($vaultMap[$key], array_filter($u));
+        } else {
+            $vaultMap[$key] = $u;
+        }
+    }
+
+    $finalVault = array_values($vaultMap);
+    $encoded = json_encode($finalVault, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+
+    @file_put_contents(DATA_DIR . 'users_vault.json', $encoded, LOCK_EX);
+    @file_put_contents(DATA_DIR . 'users.json.bak', $encoded, LOCK_EX);
+    
     $backupDir = DATA_DIR . 'backups/';
     if (!file_exists($backupDir)) {
         @mkdir($backupDir, 0777, true);
     }
-    if (file_exists($backupDir)) {
-        @file_put_contents($backupDir . 'users_latest.json', $encoded, LOCK_EX);
-    }
-
-    // Backup 3: Persistent temp dir untuk pemulihan darurat jika struktur folder bergeser
-    $sysBak = sys_get_temp_dir() . '/montaseu_users_backup.json';
-    @file_put_contents($sysBak, $encoded, LOCK_EX);
+    @file_put_contents($backupDir . 'users_latest.json', $encoded, LOCK_EX);
+    @file_put_contents(sys_get_temp_dir() . '/montaseu_users_vault.json', $encoded, LOCK_EX);
 }
 
-function restoreUserDataFromBackup() {
-    $backupPaths = [
+function removeFromVault($userId, $username = '') {
+    $vaultPaths = [
+        DATA_DIR . 'users_vault.json',
         DATA_DIR . 'users.json.bak',
         DATA_DIR . 'backups/users_latest.json',
-        sys_get_temp_dir() . '/montaseu_users_backup.json'
+        sys_get_temp_dir() . '/montaseu_users_vault.json'
     ];
 
-    foreach ($backupPaths as $path) {
-        if (file_exists($path) && filesize($path) > 0) {
-            $content = file_get_contents($path);
+    foreach ($vaultPaths as $path) {
+        if (file_exists($path)) {
+            $content = @file_get_contents($path);
             $data = json_decode($content, true);
-            if (is_array($data) && count($data) > 0) {
-                return $data;
+            if (is_array($data)) {
+                $filtered = array_filter($data, function($u) use ($userId, $username) {
+                    $matchId = isset($u['id']) && (int)$u['id'] === (int)$userId;
+                    $matchUsername = !empty($username) && isset($u['username']) && strtolower(trim($u['username'])) === strtolower(trim($username));
+                    return !$matchId && !$matchUsername;
+                });
+                $encoded = json_encode(array_values($filtered), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+                @file_put_contents($path, $encoded, LOCK_EX);
             }
         }
     }
-    return null;
 }
 
 // Helper untuk membaca & menulis JSON dengan proteksi Auto-Recovery
@@ -92,10 +137,10 @@ function loadJSON($file, $default = []) {
     $path = DATA_DIR . $file;
     if (!file_exists($path) || filesize($path) === 0) {
         if ($file === 'users.json') {
-            $recovered = restoreUserDataFromBackup();
-            if (!empty($recovered)) {
-                saveJSON('users.json', $recovered);
-                return $recovered;
+            $vaultUsers = getVaultUsers();
+            if (!empty($vaultUsers)) {
+                saveJSON('users.json', $vaultUsers);
+                return $vaultUsers;
             }
         }
         saveJSON($file, $default);
@@ -106,10 +151,10 @@ function loadJSON($file, $default = []) {
     $data = json_decode($content, true);
     if (!is_array($data)) {
         if ($file === 'users.json') {
-            $recovered = restoreUserDataFromBackup();
-            if (!empty($recovered)) {
-                saveJSON('users.json', $recovered);
-                return $recovered;
+            $vaultUsers = getVaultUsers();
+            if (!empty($vaultUsers)) {
+                saveJSON('users.json', $vaultUsers);
+                return $vaultUsers;
             }
         }
         return $default;
@@ -125,11 +170,11 @@ function saveJSON($file, $data) {
     file_put_contents($path, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE), LOCK_EX);
 
     if ($file === 'users.json' && is_array($data) && !empty($data)) {
-        backupUserData($data);
+        updateVaultWithUsers($data);
     }
 }
 
-// Inisialisasi Data Default dengan Preservasi Akun Existing & Normalisasi Skema Username
+// Inisialisasi Data Default dengan Akumulasi Vault & Auto-Recovery Karyawan Existing
 function initJSONData() {
     if (!file_exists(UPLOADS_DIR)) {
         @mkdir(UPLOADS_DIR, 0777, true);
@@ -150,7 +195,7 @@ function initJSONData() {
         saveJSON('settings.json', $defaultSettings);
     }
 
-    // Standard Default Accounts (dengan Username Biasa)
+    // Akun Default
     $adminPass = password_hash('admin123', PASSWORD_DEFAULT);
     $userPass = password_hash('user123', PASSWORD_DEFAULT);
 
@@ -162,71 +207,71 @@ function initJSONData() {
         ['id' => 5, 'username' => 'supervisor', 'name' => 'Budi Santoso', 'email' => 'supervisor@montaseu.com', 'password' => $userPass, 'role' => 'karyawan', 'job_title' => 'Site Supervisor', 'created_at' => date('Y-m-d H:i:s')]
     ];
 
+    // Read active users from users.json
     $usersPath = DATA_DIR . 'users.json';
-    if (!file_exists($usersPath)) {
-        $recovered = restoreUserDataFromBackup();
-        if (!empty($recovered)) {
-            $existingUsers = $recovered;
-        } else {
-            $existingUsers = $defaultAccounts;
+    $existingUsers = [];
+    if (file_exists($usersPath) && filesize($usersPath) > 0) {
+        $content = @file_get_contents($usersPath);
+        $data = json_decode($content, true);
+        if (is_array($data)) {
+            $existingUsers = $data;
         }
-    } else {
-        $existingUsers = loadJSON('users.json', []);
     }
 
-    if (empty($existingUsers)) {
-        $existingUsers = $defaultAccounts;
+    // Retrieve ALL known users from Master Vault
+    $vaultUsers = getVaultUsers();
+
+    // Combine existing users with Vault users to recover any missing accounts
+    $combinedMap = [];
+    foreach ($vaultUsers as $u) {
+        if (!is_array($u)) continue;
+        $key = !empty($u['username']) ? strtolower(trim($u['username'])) : (!empty($u['email']) ? strtolower(trim($u['email'])) : 'id_' . ($u['id'] ?? 0));
+        $combinedMap[$key] = $u;
+    }
+    foreach ($existingUsers as $u) {
+        if (!is_array($u)) continue;
+        $key = !empty($u['username']) ? strtolower(trim($u['username'])) : (!empty($u['email']) ? strtolower(trim($u['email'])) : 'id_' . ($u['id'] ?? 0));
+        if (isset($combinedMap[$key])) {
+            $combinedMap[$key] = array_merge($combinedMap[$key], $u);
+        } else {
+            $combinedMap[$key] = $u;
+        }
     }
 
-    // Normalisasi struktur data & Penggabungan aman (Safe Merge)
-    $usernamesMap = [];
-    $emailsMap = [];
-    $idsMap = [];
+    // Add default accounts if missing
+    foreach ($defaultAccounts as $def) {
+        $key = strtolower($def['username']);
+        if (!isset($combinedMap[$key])) {
+            $combinedMap[$key] = $def;
+        }
+    }
+
+    $finalUsers = array_values($combinedMap);
+
+    // Schema normalization
     $maxId = 0;
-
-    foreach ($existingUsers as &$u) {
+    foreach ($finalUsers as &$u) {
         if (!isset($u['username']) || empty($u['username'])) {
-            // Auto-generate username dari bagian depan email jika belum ada
             if (!empty($u['email'])) {
                 $parts = explode('@', $u['email']);
                 $u['username'] = strtolower(trim($parts[0]));
             } else {
-                $u['username'] = 'user' . $u['id'];
+                $u['username'] = 'user' . ($u['id'] ?? rand(10, 999));
             }
         }
         if (!isset($u['role'])) $u['role'] = 'karyawan';
         if (!isset($u['job_title'])) $u['job_title'] = 'Staff Interior';
         if (!isset($u['avatar'])) $u['avatar'] = null;
         if (!isset($u['created_at'])) $u['created_at'] = date('Y-m-d H:i:s');
-
-        $usernamesMap[strtolower($u['username'])] = true;
-        if (!empty($u['email'])) {
-            $emailsMap[strtolower($u['email'])] = true;
-        }
-        $idsMap[(int)$u['id']] = true;
-        if ((int)$u['id'] > $maxId) {
+        if (isset($u['id']) && (int)$u['id'] > $maxId) {
             $maxId = (int)$u['id'];
         }
     }
     unset($u);
 
-    // Tambahkan default account HANYA jika username-nya belum ada
-    foreach ($defaultAccounts as $def) {
-        if (!isset($usernamesMap[strtolower($def['username'])])) {
-            $newId = $def['id'];
-            if (isset($idsMap[$newId])) {
-                $maxId++;
-                $newId = $maxId;
-            }
-            $def['id'] = $newId;
-            $existingUsers[] = $def;
-            $usernamesMap[strtolower($def['username'])] = true;
-            $idsMap[$newId] = true;
-        }
-    }
-
-    saveJSON('users.json', $existingUsers);
-    backupUserData($existingUsers);
+    // Save normalized state to users.json and update Vault
+    saveJSON('users.json', $finalUsers);
+    updateVaultWithUsers($finalUsers);
 
     // Attendances Default File
     if (!file_exists(DATA_DIR . 'attendances.json')) {
@@ -265,6 +310,20 @@ function getUserByUsername($username) {
             return $u;
         }
     }
+
+    // Emergency Fallback: check Master Vault directly
+    $vaultUsers = getVaultUsers();
+    foreach ($vaultUsers as $u) {
+        $uUsername = isset($u['username']) ? strtolower(trim($u['username'])) : '';
+        $uEmail = isset($u['email']) ? strtolower(trim($u['email'])) : '';
+        if ($uUsername === $input || $uEmail === $input) {
+            // Self-heal active users list
+            $users[] = $u;
+            saveJSON('users.json', $users);
+            return $u;
+        }
+    }
+
     return null;
 }
 
@@ -279,6 +338,15 @@ function getUserById($id) {
             return $u;
         }
     }
+
+    // Fallback to Vault
+    $vaultUsers = getVaultUsers();
+    foreach ($vaultUsers as $u) {
+        if ((int)$u['id'] === (int)$id) {
+            return $u;
+        }
+    }
+
     return null;
 }
 
@@ -322,13 +390,20 @@ function saveUser($name, $username, $password, $role, $jobTitle, $email = '', $i
 
         if ($updated) {
             saveJSON('users.json', $users);
+            updateVaultWithUsers($users);
             return getUserById($id);
         }
     } else {
+        // Calculate maxId using both active users and Vault
+        $vaultUsers = getVaultUsers();
+        $allKnown = array_merge($users, $vaultUsers);
         $maxId = 0;
-        foreach ($users as $u) {
-            if ((int)$u['id'] > $maxId) $maxId = (int)$u['id'];
+        foreach ($allKnown as $u) {
+            if (isset($u['id']) && (int)$u['id'] > $maxId) {
+                $maxId = (int)$u['id'];
+            }
         }
+
         $newUser = [
             'id' => $maxId + 1,
             'username' => $usernameClean,
@@ -342,17 +417,26 @@ function saveUser($name, $username, $password, $role, $jobTitle, $email = '', $i
         ];
         $users[] = $newUser;
         saveJSON('users.json', $users);
+        updateVaultWithUsers([$newUser]);
         return $newUser;
     }
     return false;
 }
 
 function deleteUser($id) {
+    $user = getUserById($id);
+    $username = $user ? ($user['username'] ?? '') : '';
+
     $users = getUsers();
     $newUsers = array_filter($users, function($u) use ($id) {
         return (int)$u['id'] !== (int)$id;
     });
-    saveJSON('users.json', array_values($newUsers));
+    $reindexed = array_values($newUsers);
+
+    $path = DATA_DIR . 'users.json';
+    file_put_contents($path, json_encode($reindexed, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE), LOCK_EX);
+
+    removeFromVault($id, $username);
     return true;
 }
 
