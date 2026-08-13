@@ -22,19 +22,49 @@ function getBaseUrl() {
 }
 define('BASE_URL', getBaseUrl());
 
-// Tentukan direktori penyimpanan data utama
-$targetDataDir = __DIR__ . '/../data/';
-if (!file_exists($targetDataDir)) {
-    @mkdir($targetDataDir, 0777, true);
+// Tentukan direktori penyimpanan data utama (Dukung Vercel Serverless Read-Only Filesystem)
+function getWritableDataDir() {
+    $localDataDir = __DIR__ . '/../data/';
+    if (!file_exists($localDataDir)) {
+        @mkdir($localDataDir, 0777, true);
+    }
+    
+    // Uji apakah direktori lokal dapat ditulis
+    $testFile = $localDataDir . '.test_write_' . md5((string)microtime(true));
+    if (@file_put_contents($testFile, 'test') !== false) {
+        @unlink($testFile);
+        return rtrim(realpath($localDataDir) ?: $localDataDir, '/') . '/';
+    }
+
+    // Fallback otomatis ke /tmp jika direktori project read-only (seperti di Vercel Serverless)
+    $tmpDataDir = sys_get_temp_dir() . '/montaseu_data/';
+    if (!file_exists($tmpDataDir)) {
+        @mkdir($tmpDataDir, 0777, true);
+    }
+    return rtrim($tmpDataDir, '/') . '/';
 }
 
-$targetUploadsDir = __DIR__ . '/../uploads/selfies/';
-if (!file_exists($targetUploadsDir)) {
-    @mkdir($targetUploadsDir, 0777, true);
+function getWritableUploadsDir() {
+    $localUploadsDir = __DIR__ . '/../uploads/selfies/';
+    if (!file_exists($localUploadsDir)) {
+        @mkdir($localUploadsDir, 0777, true);
+    }
+
+    $testFile = $localUploadsDir . '.test_write_' . md5((string)microtime(true));
+    if (@file_put_contents($testFile, 'test') !== false) {
+        @unlink($testFile);
+        return rtrim(realpath($localUploadsDir) ?: $localUploadsDir, '/') . '/';
+    }
+
+    $tmpUploadsDir = sys_get_temp_dir() . '/montaseu_uploads/';
+    if (!file_exists($tmpUploadsDir)) {
+        @mkdir($tmpUploadsDir, 0777, true);
+    }
+    return rtrim($tmpUploadsDir, '/') . '/';
 }
 
-define('DATA_DIR', rtrim(realpath($targetDataDir) ?: $targetDataDir, '/') . '/');
-define('UPLOADS_DIR', rtrim(realpath($targetUploadsDir) ?: $targetUploadsDir, '/') . '/');
+define('DATA_DIR', getWritableDataDir());
+define('UPLOADS_DIR', getWritableUploadsDir());
 
 /**
  * --- ARSITEKTUR MASTER DATA VAULT (AKUMULATOR PROTEKSI KARYAWAN) ---
@@ -48,6 +78,9 @@ function getVaultUsers() {
         DATA_DIR . 'users_vault.json',
         DATA_DIR . 'users.json.bak',
         DATA_DIR . 'backups/users_latest.json',
+        __DIR__ . '/../data/users_vault.json',
+        __DIR__ . '/../data/users.json.bak',
+        __DIR__ . '/../data/users.json',
         sys_get_temp_dir() . '/montaseu_users_vault.json'
     ];
 
@@ -147,7 +180,7 @@ function loadJSON($file, $default = []) {
         return $default;
     }
 
-    $content = file_get_contents($path);
+    $content = @file_get_contents($path);
     $data = json_decode($content, true);
     if (!is_array($data)) {
         if ($file === 'users.json') {
@@ -167,7 +200,7 @@ function saveJSON($file, $data) {
         @mkdir(DATA_DIR, 0777, true);
     }
     $path = DATA_DIR . $file;
-    file_put_contents($path, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE), LOCK_EX);
+    @file_put_contents($path, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE), LOCK_EX);
 
     if ($file === 'users.json' && is_array($data) && !empty($data)) {
         updateVaultWithUsers($data);
@@ -434,7 +467,7 @@ function deleteUser($id) {
     $reindexed = array_values($newUsers);
 
     $path = DATA_DIR . 'users.json';
-    file_put_contents($path, json_encode($reindexed, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE), LOCK_EX);
+    @file_put_contents($path, json_encode($reindexed, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE), LOCK_EX);
 
     removeFromVault($id, $username);
     return true;
