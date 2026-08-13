@@ -231,16 +231,11 @@ function initJSONData() {
         saveJSON('settings.json', $defaultSettings);
     }
 
-    // Akun Default
+    // Akun Default (HANYA ADMIN STUDIO)
     $adminPass = password_hash('admin123', PASSWORD_DEFAULT);
-    $userPass = password_hash('user123', PASSWORD_DEFAULT);
 
     $defaultAccounts = [
-        ['id' => 1, 'username' => 'admin', 'name' => 'Admin Montaseu', 'email' => 'admin@montaseu.com', 'password' => $adminPass, 'role' => 'admin', 'job_title' => 'Studio Manager / Admin', 'created_at' => date('Y-m-d H:i:s')],
-        ['id' => 2, 'username' => 'karyawan', 'name' => 'Karyawan Montaseu', 'email' => 'karyawan@montaseu.com', 'password' => $userPass, 'role' => 'karyawan', 'job_title' => 'Staff Interior Designer', 'created_at' => date('Y-m-d H:i:s')],
-        ['id' => 3, 'username' => 'designer', 'name' => 'Rian Pratama', 'email' => 'designer@montaseu.com', 'password' => $userPass, 'role' => 'karyawan', 'job_title' => 'Lead Interior Designer', 'created_at' => date('Y-m-d H:i:s')],
-        ['id' => 4, 'username' => 'architect', 'name' => 'Siti Amalia', 'email' => 'architect@montaseu.com', 'password' => $userPass, 'role' => 'karyawan', 'job_title' => 'Senior Project Architect', 'created_at' => date('Y-m-d H:i:s')],
-        ['id' => 5, 'username' => 'supervisor', 'name' => 'Budi Santoso', 'email' => 'supervisor@montaseu.com', 'password' => $userPass, 'role' => 'karyawan', 'job_title' => 'Site Supervisor', 'created_at' => date('Y-m-d H:i:s')]
+        ['id' => 1, 'username' => 'admin', 'name' => 'Admin Montaseu', 'email' => 'admin@montaseu.com', 'password' => $adminPass, 'role' => 'admin', 'job_title' => 'Studio Manager / Admin', 'created_at' => date('Y-m-d H:i:s')]
     ];
 
     // Read active users from users.json

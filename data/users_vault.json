@@ -1,57 +1,13 @@
 [
     {
         "id": 1,
+        "username": "admin",
         "name": "Admin Montaseu",
         "email": "admin@montaseu.com",
         "password": "$2y$10$qrt2ecooBRLj4b8G9qY4defhwdLumusc5eeqHDuPL0ggLOR7LEYtW",
         "role": "admin",
         "job_title": "Studio Manager \/ Admin",
-        "created_at": "2026-08-12 14:19:41",
         "avatar": null,
-        "username": "admin"
-    },
-    {
-        "id": 2,
-        "name": "Karyawan Montaseu",
-        "email": "karyawan@montaseu.com",
-        "password": "$2y$10$2wMagcZiVPgVfg0awHDFkenn8paOvF6J4bbpRAUip0Q901foxq6jW",
-        "role": "karyawan",
-        "job_title": "Staff Interior Designer",
-        "created_at": "2026-08-12 14:19:41",
-        "avatar": null,
-        "username": "karyawan"
-    },
-    {
-        "id": 3,
-        "name": "Rian Pratama",
-        "email": "designer@montaseu.com",
-        "password": "$2y$10$l4.Lt4XmfIyAnisdq9SSNuThBxdgCPcGfazzgOSAlIkKTGdmgoixu",
-        "role": "karyawan",
-        "job_title": "Lead Interior Designer",
-        "created_at": "2026-08-12 14:19:41",
-        "avatar": null,
-        "username": "designer"
-    },
-    {
-        "id": 4,
-        "name": "Siti Amalia",
-        "email": "architect@montaseu.com",
-        "password": "$2y$10$l4.Lt4XmfIyAnisdq9SSNuThBxdgCPcGfazzgOSAlIkKTGdmgoixu",
-        "role": "karyawan",
-        "job_title": "Senior Project Architect",
-        "created_at": "2026-08-12 14:19:41",
-        "avatar": null,
-        "username": "architect"
-    },
-    {
-        "id": 5,
-        "name": "Budi Santoso",
-        "email": "supervisor@montaseu.com",
-        "password": "$2y$10$l4.Lt4XmfIyAnisdq9SSNuThBxdgCPcGfazzgOSAlIkKTGdmgoixu",
-        "role": "karyawan",
-        "job_title": "Site Supervisor",
-        "created_at": "2026-08-12 14:19:41",
-        "avatar": null,
-        "username": "supervisor"
+        "created_at": "2026-08-12 14:19:41"
     }
 ]

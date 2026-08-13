@@ -17,12 +17,10 @@ CREATE TABLE IF NOT EXISTS `users` (
   `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- Seed Data Akun Login Default:
+-- Seed Data Akun Login Default (Hanya Admin):
 -- Admin: username 'admin' / pass 'admin123'
--- Karyawan: username 'karyawan' / pass 'user123'
 INSERT INTO `users` (`id`, `username`, `name`, `email`, `password`, `role`, `job_title`) VALUES
-(1, 'admin', 'Admin Montaseu', 'admin@montaseu.com', '$2y$10$LQjxGERUqacFkEtQzagnGuAcWcl5UlLs2R.cexIYyHf9.BNeSQMT.', 'admin', 'Studio Manager / Admin'),
-(2, 'karyawan', 'Karyawan Montaseu', 'karyawan@montaseu.com', '$2y$10$M01I42o.RgTsFWxaLSOki.4DJFfj3gYlVFQouKEw9NBZXqdDkipMO', 'karyawan', 'Staff Interior Designer')
+(1, 'admin', 'Admin Montaseu', 'admin@montaseu.com', '$2y$10$LQjxGERUqacFkEtQzagnGuAcWcl5UlLs2R.cexIYyHf9.BNeSQMT.', 'admin', 'Studio Manager / Admin')
 ON DUPLICATE KEY UPDATE `id` = `id`;
 
 -- 2. Struktur Tabel Attendances (Presensi Foto & Location Tracking GPS)
