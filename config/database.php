@@ -519,6 +519,8 @@ function saveClockIn($userId, $date, $photo, $lat, $lng, $address, $status, $not
         'clock_out_notes' => null,
         'work_duration' => null,
         'location_type' => $locationType,
+        'clock_in_location_type' => $locationType,
+        'clock_out_location_type' => null,
         'created_at' => date('Y-m-d H:i:s')
     ];
 
@@ -527,7 +529,7 @@ function saveClockIn($userId, $date, $photo, $lat, $lng, $address, $status, $not
     return $record;
 }
 
-function saveClockOut($attendanceId, $photo, $lat, $lng, $address, $notes, $duration) {
+function saveClockOut($attendanceId, $photo, $lat, $lng, $address, $notes, $duration, $locationType = 'Studio Office') {
     $attendances = getAttendances();
     foreach ($attendances as &$a) {
         if ($a['id'] == $attendanceId) {
@@ -537,6 +539,7 @@ function saveClockOut($attendanceId, $photo, $lat, $lng, $address, $notes, $dura
             $a['clock_out_lng'] = (float)$lng;
             $a['clock_out_address'] = $address;
             $a['clock_out_notes'] = $notes;
+            $a['clock_out_location_type'] = $locationType;
             $a['work_duration'] = $duration;
             saveJSON('attendances.json', $attendances);
             return $a;

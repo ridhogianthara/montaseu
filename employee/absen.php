@@ -77,7 +77,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $diff = $inTime->diff($outTime);
             $durationStr = $diff->h . ' Jam ' . $diff->i . ' Menit';
 
-            saveClockOut($todayRecord['id'], $photoPath, $lat, $lng, $address, $notes, $durationStr);
+            saveClockOut($todayRecord['id'], $photoPath, $lat, $lng, $address, $notes, $durationStr, $locationType);
 
             $message = "Presensi Pulang Berhasil Ditambahkan!";
             $redirectScript = "<script>setTimeout(function(){ window.location.href = '" . BASE_URL . "/employee/dashboard.php'; }, 1000);</script>";

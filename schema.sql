@@ -42,7 +42,9 @@ CREATE TABLE IF NOT EXISTS `attendances` (
   `clock_out_address` TEXT DEFAULT NULL,
   `clock_out_notes` TEXT DEFAULT NULL,
   `work_duration` VARCHAR(100) DEFAULT NULL,
-  `location_type` VARCHAR(100) DEFAULT 'Office',
+  `location_type` VARCHAR(100) DEFAULT 'Studio Office',
+  `clock_in_location_type` VARCHAR(100) DEFAULT 'Studio Office',
+  `clock_out_location_type` VARCHAR(100) DEFAULT NULL,
   `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

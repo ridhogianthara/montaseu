@@ -41,7 +41,7 @@ usort($karyawanList, function($a, $b) {
         <div>
             <h1 class="brand-title" style="font-size: 1.8rem; margin-bottom: 4px;">Monitoring Presensi & Lokasi</h1>
             <p style="color: var(--text-secondary); font-size: 0.9rem;">
-                Monitoring Terpisah Detail Foto Snapshot & Peta GPS Presensi Masuk vs Pulang
+                Monitoring Terpisah Detail Foto Snapshot, Tipe Lokasi, & Peta GPS Presensi Masuk vs Pulang
             </p>
         </div>
 
@@ -85,13 +85,13 @@ usort($karyawanList, function($a, $b) {
                 <tr>
                     <!-- Sub-header Masuk -->
                     <th style="background: rgba(16, 185, 129, 0.08); font-size:0.75rem;">Foto Masuk</th>
-                    <th style="background: rgba(16, 185, 129, 0.08); font-size:0.75rem;">Jam & Status</th>
+                    <th style="background: rgba(16, 185, 129, 0.08); font-size:0.75rem;">Jam, Status & Tipe Lokasi</th>
                     <th style="background: rgba(16, 185, 129, 0.08); font-size:0.75rem;">Alamat & Catatan Masuk</th>
                     <th style="background: rgba(16, 185, 129, 0.08); font-size:0.75rem;">Peta Masuk</th>
                     
                     <!-- Sub-header Pulang -->
                     <th style="background: rgba(197, 168, 128, 0.08); font-size:0.75rem;">Foto Pulang</th>
-                    <th style="background: rgba(197, 168, 128, 0.08); font-size:0.75rem;">Jam & Durasi</th>
+                    <th style="background: rgba(197, 168, 128, 0.08); font-size:0.75rem;">Jam, Durasi & Tipe Lokasi</th>
                     <th style="background: rgba(197, 168, 128, 0.08); font-size:0.75rem;">Alamat & Catatan Pulang</th>
                     <th style="background: rgba(197, 168, 128, 0.08); font-size:0.75rem;">Peta Pulang</th>
                 </tr>
@@ -105,12 +105,15 @@ usort($karyawanList, function($a, $b) {
                     </tr>
                 <?php else: ?>
                     <?php foreach ($fullRecords as $idx => $r): ?>
+                        <?php 
+                            $inLocType = $r['clock_in_location_type'] ?? $r['location_type'] ?? 'Studio Office';
+                            $outLocType = $r['clock_out_location_type'] ?? ($r['clock_out_time'] ? 'Studio Office' : '-');
+                        ?>
                         <tr>
                             <td style="text-align:center;"><?= $idx + 1 ?></td>
                             <td>
                                 <strong style="color:var(--text-primary); display:block;"><?= sanitize($r['name']) ?></strong>
                                 <span style="font-size:0.75rem; color:var(--accent-gold);"><?= sanitize($r['job_title']) ?></span>
-                                <br><span class="badge badge-role" style="font-size:0.7rem; margin-top:2px;"><?= sanitize($r['location_type']) ?></span>
                             </td>
                             
                             <!-- DETAIL ABSEN MASUK -->
@@ -128,6 +131,7 @@ usort($karyawanList, function($a, $b) {
                                         <?= $r['clock_in_status'] ?>
                                     </span>
                                 <?php endif; ?>
+                                <span class="badge badge-role" style="font-size:0.65rem; display:block; margin-top:3px;" title="Tipe Lokasi Masuk"><?= sanitize($inLocType) ?></span>
                             </td>
                             <td style="background: rgba(16, 185, 129, 0.03); max-width:200px; font-size:0.8rem;">
                                 <div style="color:var(--text-primary); font-weight:600;"><?= sanitize($r['clock_in_notes'] ?: 'Tanpa Catatan') ?></div>
@@ -157,6 +161,7 @@ usort($karyawanList, function($a, $b) {
                                 <?php if ($r['clock_out_time']): ?>
                                     <div style="font-weight:700; color:var(--text-primary);"><?= date('H:i', strtotime($r['clock_out_time'])) . ' WIB' ?></div>
                                     <div style="font-size:0.75rem; color:var(--accent-gold); font-weight:600;"><?= $r['work_duration'] ?: '-' ?></div>
+                                    <span class="badge badge-role" style="font-size:0.65rem; display:block; margin-top:3px;" title="Tipe Lokasi Pulang"><?= sanitize($outLocType) ?></span>
                                 <?php else: ?>
                                     <span style="color:var(--text-muted); font-size:0.8rem;">--:--</span>
                                 <?php endif; ?>

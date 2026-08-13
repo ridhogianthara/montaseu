@@ -22,7 +22,7 @@ usort($records, function($a, $b) {
         <div>
             <h1 class="brand-title" style="font-size: 1.8rem; margin-bottom: 4px;">Riwayat Presensi Personal</h1>
             <p style="color: var(--text-secondary); font-size: 0.9rem;">
-                Histori lengkap waktu, foto selfie, dan pelacakan lokasi presensi Anda (Terpisah Masuk & Pulang).
+                Histori lengkap waktu, foto selfie, tipe lokasi, dan pelacakan lokasi presensi Anda (Terpisah Masuk & Pulang).
             </p>
         </div>
 
@@ -40,7 +40,7 @@ usort($records, function($a, $b) {
             <thead>
                 <tr>
                     <th rowspan="2" style="vertical-align:middle; text-align:center;">No</th>
-                    <th rowspan="2" style="vertical-align:middle;">Tanggal & Tipe Lokasi</th>
+                    <th rowspan="2" style="vertical-align:middle;">Tanggal</th>
                     <th colspan="4" style="background: rgba(16, 185, 129, 0.15); text-align:center; color:var(--accent-emerald); border-bottom:1px solid rgba(16, 185, 129, 0.3);">
                         <i class="fas fa-sign-in-alt"></i> DETAIL ABSEN MASUK
                     </th>
@@ -51,13 +51,13 @@ usort($records, function($a, $b) {
                 <tr>
                     <!-- Sub-header Masuk -->
                     <th style="background: rgba(16, 185, 129, 0.08); font-size:0.75rem;">Foto Masuk</th>
-                    <th style="background: rgba(16, 185, 129, 0.08); font-size:0.75rem;">Jam & Status</th>
+                    <th style="background: rgba(16, 185, 129, 0.08); font-size:0.75rem;">Jam, Status & Tipe Lokasi</th>
                     <th style="background: rgba(16, 185, 129, 0.08); font-size:0.75rem;">Alamat & Catatan Masuk</th>
                     <th style="background: rgba(16, 185, 129, 0.08); font-size:0.75rem;">Peta Masuk</th>
                     
                     <!-- Sub-header Pulang -->
                     <th style="background: rgba(197, 168, 128, 0.08); font-size:0.75rem;">Foto Pulang</th>
-                    <th style="background: rgba(197, 168, 128, 0.08); font-size:0.75rem;">Jam & Durasi</th>
+                    <th style="background: rgba(197, 168, 128, 0.08); font-size:0.75rem;">Jam, Durasi & Tipe Lokasi</th>
                     <th style="background: rgba(197, 168, 128, 0.08); font-size:0.75rem;">Alamat & Catatan Pulang</th>
                     <th style="background: rgba(197, 168, 128, 0.08); font-size:0.75rem;">Peta Pulang</th>
                 </tr>
@@ -71,12 +71,13 @@ usort($records, function($a, $b) {
                     </tr>
                 <?php else: ?>
                     <?php $idx = 1; foreach ($records as $r): ?>
+                        <?php 
+                            $inLocType = $r['clock_in_location_type'] ?? $r['location_type'] ?? 'Studio Office';
+                            $outLocType = $r['clock_out_location_type'] ?? ($r['clock_out_time'] ? 'Studio Office' : '-');
+                        ?>
                         <tr>
                             <td style="text-align:center;"><?= $idx++ ?></td>
-                            <td>
-                                <strong><?= date('d/m/Y', strtotime($r['date'])) ?></strong>
-                                <br><span class="badge badge-role" style="font-size:0.7rem; margin-top:2px;"><?= sanitize($r['location_type']) ?></span>
-                            </td>
+                            <td><strong><?= date('d/m/Y', strtotime($r['date'])) ?></strong></td>
 
                             <!-- DETAIL ABSEN MASUK -->
                             <td style="background: rgba(16, 185, 129, 0.03); text-align:center;">
@@ -93,6 +94,7 @@ usort($records, function($a, $b) {
                                         <?= $r['clock_in_status'] ?>
                                     </span>
                                 <?php endif; ?>
+                                <span class="badge badge-role" style="font-size:0.65rem; display:block; margin-top:3px;" title="Tipe Lokasi Masuk"><?= sanitize($inLocType) ?></span>
                             </td>
                             <td style="background: rgba(16, 185, 129, 0.03); max-width:180px; font-size:0.8rem;">
                                 <div style="color:var(--text-primary); font-weight:600;"><?= sanitize($r['clock_in_notes'] ?: 'Tanpa Catatan') ?></div>
@@ -122,6 +124,7 @@ usort($records, function($a, $b) {
                                 <?php if ($r['clock_out_time']): ?>
                                     <div style="font-weight:700; color:var(--text-primary);"><?= date('H:i', strtotime($r['clock_out_time'])) . ' WIB' ?></div>
                                     <div style="font-size:0.75rem; color:var(--accent-gold); font-weight:600;"><?= $r['work_duration'] ?: '-' ?></div>
+                                    <span class="badge badge-role" style="font-size:0.65rem; display:block; margin-top:3px;" title="Tipe Lokasi Pulang"><?= sanitize($outLocType) ?></span>
                                 <?php else: ?>
                                     <span style="color:var(--text-muted); font-size:0.8rem;">--:--</span>
                                 <?php endif; ?>
