@@ -88,21 +88,31 @@ usort($todayFullList, function($a, $b) {
         <table class="studio-table">
             <thead>
                 <tr>
-                    <th>Karyawan</th>
-                    <th>Foto Selfie</th>
-                    <th>Jam Masuk</th>
-                    <th>Status</th>
-                    <th>Jam Pulang</th>
-                    <th>Durasi</th>
-                    <th>Tipe Lokasi</th>
-                    <th>Alamat / Catatan Proyek</th>
-                    <th>Tracking Peta</th>
+                    <th rowspan="2" style="vertical-align:middle;">Karyawan</th>
+                    <th colspan="3" style="background: rgba(16, 185, 129, 0.15); text-align:center; color:var(--accent-emerald); border-bottom:1px solid rgba(16, 185, 129, 0.3);">
+                        <i class="fas fa-sign-in-alt"></i> DETAIL ABSEN MASUK
+                    </th>
+                    <th colspan="3" style="background: rgba(197, 168, 128, 0.15); text-align:center; color:var(--accent-gold); border-bottom:1px solid rgba(197, 168, 128, 0.3);">
+                        <i class="fas fa-sign-out-alt"></i> DETAIL ABSEN PULANG
+                    </th>
+                    <th rowspan="2" style="vertical-align:middle; text-align:center;">Tipe Lokasi</th>
+                </tr>
+                <tr>
+                    <!-- Sub-header Masuk -->
+                    <th style="background: rgba(16, 185, 129, 0.08); font-size:0.75rem;">Foto Masuk</th>
+                    <th style="background: rgba(16, 185, 129, 0.08); font-size:0.75rem;">Jam & Status</th>
+                    <th style="background: rgba(16, 185, 129, 0.08); font-size:0.75rem;">Peta Masuk</th>
+                    
+                    <!-- Sub-header Pulang -->
+                    <th style="background: rgba(197, 168, 128, 0.08); font-size:0.75rem;">Foto Pulang</th>
+                    <th style="background: rgba(197, 168, 128, 0.08); font-size:0.75rem;">Jam & Durasi</th>
+                    <th style="background: rgba(197, 168, 128, 0.08); font-size:0.75rem;">Peta Pulang</th>
                 </tr>
             </thead>
             <tbody>
                 <?php if (empty($todayFullList)): ?>
                     <tr>
-                        <td colspan="9" style="text-align:center; padding:3rem; color:var(--text-muted);">
+                        <td colspan="8" style="text-align:center; padding:3rem; color:var(--text-muted);">
                             Belum ada presensi karyawan yang masuk hari ini.
                         </td>
                     </tr>
@@ -113,37 +123,58 @@ usort($todayFullList, function($a, $b) {
                                 <strong style="color:var(--text-primary); display:block;"><?= sanitize($row['name']) ?></strong>
                                 <span style="font-size:0.75rem; color:var(--accent-gold);"><?= sanitize($row['job_title']) ?></span>
                             </td>
-                            <td>
+                            
+                            <!-- DETAIL MASUK -->
+                            <td style="background: rgba(16, 185, 129, 0.03); text-align:center;">
                                 <?php if (!empty($row['clock_in_photo'])): ?>
-                                    <img src="<?= $row['clock_in_photo'] ?>" class="img-thumb" onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name=Selfie&background=C5A880&color=181C23';" onclick="viewImageModal('<?= addslashes($row['clock_in_photo']) ?>', 'Foto Selfie Presensi - <?= sanitize($row['name']) ?>')">
+                                    <img src="<?= $row['clock_in_photo'] ?>" class="img-thumb" onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name=Masuk&background=10B981&color=FFFFFF';" onclick="viewImageModal('<?= addslashes($row['clock_in_photo']) ?>', 'Foto Selfie Masuk - <?= sanitize($row['name']) ?>')">
                                 <?php else: ?>
                                     <span style="color:var(--text-muted); font-size:0.8rem;">-</span>
                                 <?php endif; ?>
                             </td>
-                            <td><?= $row['clock_in_time'] ? date('H:i', strtotime($row['clock_in_time'])) . ' WIB' : '-' ?></td>
-                            <td>
-                                <span class="badge <?= $row['clock_in_status'] === 'On Time' ? 'badge-on-time' : 'badge-late' ?>">
+                            <td style="background: rgba(16, 185, 129, 0.03);">
+                                <div style="font-weight:700; color:var(--text-primary);"><?= $row['clock_in_time'] ? date('H:i', strtotime($row['clock_in_time'])) . ' WIB' : '-' ?></div>
+                                <span class="badge <?= $row['clock_in_status'] === 'On Time' ? 'badge-on-time' : 'badge-late' ?>" style="font-size:0.7rem;">
                                     <?= $row['clock_in_status'] ?>
                                 </span>
                             </td>
-                            <td><?= $row['clock_out_time'] ? date('H:i', strtotime($row['clock_out_time'])) . ' WIB' : '-' ?></td>
-                            <td><?= $row['work_duration'] ?: '-' ?></td>
-                            <td><span class="badge badge-role"><?= sanitize($row['location_type']) ?></span></td>
-                            <td style="max-width:220px; font-size:0.8rem;">
-                                <div style="color:var(--text-primary); font-weight:600;"><?= sanitize($row['clock_in_notes'] ?: 'Studio Attendance') ?></div>
-                                <div style="color:var(--text-muted); font-size:0.75rem; text-overflow:ellipsis; overflow:hidden; white-space:nowrap;" title="<?= sanitize($row['clock_in_address'] ?? '') ?>">
-                                    <?= sanitize($row['clock_in_address'] ?? '-') ?>
-                                </div>
-                            </td>
-                            <td>
+                            <td style="background: rgba(16, 185, 129, 0.03); text-align:center;">
                                 <?php if ($row['clock_in_lat'] && $row['clock_in_lng']): ?>
-                                    <button class="btn-gold" style="font-size:0.75rem; padding:4px 8px;" onclick="viewMapModal(<?= $row['clock_in_lat'] ?>, <?= $row['clock_in_lng'] ?>, '<?= addslashes(sanitize($row['clock_in_address'] ?? '')) ?>', '<?= addslashes(sanitize($row['name'])) ?>')">
-                                        <i class="fas fa-map-marked-alt"></i> Peta Lokasi
+                                    <button class="btn-gold" style="font-size:0.7rem; padding:3px 7px;" onclick="viewMapModal(<?= $row['clock_in_lat'] ?>, <?= $row['clock_in_lng'] ?>, '<?= addslashes(sanitize($row['clock_in_address'] ?? '')) ?>', 'Peta Masuk: <?= addslashes(sanitize($row['name'])) ?>')">
+                                        <i class="fas fa-map-marker-alt"></i> Masuk
                                     </button>
                                 <?php else: ?>
-                                    <span style="color:var(--text-muted); font-size:0.75rem;">Tanpa GPS</span>
+                                    <span style="color:var(--text-muted); font-size:0.75rem;">-</span>
                                 <?php endif; ?>
                             </td>
+
+                            <!-- DETAIL PULANG -->
+                            <td style="background: rgba(197, 168, 128, 0.03); text-align:center;">
+                                <?php if (!empty($row['clock_out_photo'])): ?>
+                                    <img src="<?= $row['clock_out_photo'] ?>" class="img-thumb" onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name=Pulang&background=C5A880&color=181C23';" onclick="viewImageModal('<?= addslashes($row['clock_out_photo']) ?>', 'Foto Selfie Pulang - <?= sanitize($row['name']) ?>')">
+                                <?php else: ?>
+                                    <span style="color:var(--text-muted); font-size:0.8rem;"><?= $row['clock_out_time'] ? '-' : '<span class="badge badge-late" style="font-size:0.65rem;">Belum Pulang</span>' ?></span>
+                                <?php endif; ?>
+                            </td>
+                            <td style="background: rgba(197, 168, 128, 0.03);">
+                                <?php if ($row['clock_out_time']): ?>
+                                    <div style="font-weight:700; color:var(--text-primary);"><?= date('H:i', strtotime($row['clock_out_time'])) . ' WIB' ?></div>
+                                    <div style="font-size:0.75rem; color:var(--accent-gold); font-weight:600;"><?= $row['work_duration'] ?: '-' ?></div>
+                                <?php else: ?>
+                                    <span style="color:var(--text-muted); font-size:0.8rem;">--:--</span>
+                                <?php endif; ?>
+                            </td>
+                            <td style="background: rgba(197, 168, 128, 0.03); text-align:center;">
+                                <?php if ($row['clock_out_lat'] && $row['clock_out_lng']): ?>
+                                    <button class="btn-secondary" style="font-size:0.7rem; padding:3px 7px;" onclick="viewMapModal(<?= $row['clock_out_lat'] ?>, <?= $row['clock_out_lng'] ?>, '<?= addslashes(sanitize($row['clock_out_address'] ?? '')) ?>', 'Peta Pulang: <?= addslashes(sanitize($row['name'])) ?>')">
+                                        <i class="fas fa-map-marker-alt"></i> Pulang
+                                    </button>
+                                <?php else: ?>
+                                    <span style="color:var(--text-muted); font-size:0.75rem;">-</span>
+                                <?php endif; ?>
+                            </td>
+
+                            <td style="text-align:center;"><span class="badge badge-role"><?= sanitize($row['location_type']) ?></span></td>
                         </tr>
                     <?php endforeach; ?>
                 <?php endif; ?>

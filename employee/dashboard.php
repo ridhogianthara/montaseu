@@ -165,12 +165,12 @@ $settings = getSettings();
             <thead>
                 <tr>
                     <th>Tanggal</th>
-                    <th>Foto Selfie</th>
-                    <th>Jam Masuk</th>
-                    <th>Jam Pulang</th>
+                    <th>Foto Masuk</th>
+                    <th>Jam Masuk & Status</th>
+                    <th>Foto Pulang</th>
+                    <th>Jam Pulang & Durasi</th>
                     <th>Tipe Lokasi</th>
-                    <th>Status</th>
-                    <th>Aksi</th>
+                    <th>Peta GPS</th>
                 </tr>
             </thead>
             <tbody>
@@ -184,27 +184,59 @@ $settings = getSettings();
                     <?php foreach ($recentList as $r): ?>
                         <tr>
                             <td><strong><?= date('d/m/Y', strtotime($r['date'])) ?></strong></td>
+                            
+                            <!-- Foto Masuk -->
                             <td>
                                 <?php if (!empty($r['clock_in_photo'])): ?>
-                                    <img src="<?= $r['clock_in_photo'] ?>" class="img-thumb" onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name=Selfie&background=C5A880&color=181C23';" onclick="viewImageModal('<?= addslashes($r['clock_in_photo']) ?>', 'Foto Presensi - <?= date('d/m/Y', strtotime($r['date'])) ?>')">
+                                    <img src="<?= $r['clock_in_photo'] ?>" class="img-thumb" onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name=Masuk&background=10B981&color=FFFFFF';" onclick="viewImageModal('<?= addslashes($r['clock_in_photo']) ?>', 'Foto Selfie Masuk - <?= date('d/m/Y', strtotime($r['date'])) ?>')">
                                 <?php else: ?>
                                     <span style="color:var(--text-muted); font-size:0.8rem;">-</span>
                                 <?php endif; ?>
                             </td>
-                            <td><?= $r['clock_in_time'] ? date('H:i', strtotime($r['clock_in_time'])) . ' WIB' : '-' ?></td>
-                            <td><?= $r['clock_out_time'] ? date('H:i', strtotime($r['clock_out_time'])) . ' WIB' : '-' ?></td>
-                            <td><span class="badge badge-role"><?= sanitize($r['location_type']) ?></span></td>
+                            
+                            <!-- Jam Masuk -->
                             <td>
-                                <span class="badge <?= $r['clock_in_status'] === 'On Time' ? 'badge-on-time' : 'badge-late' ?>">
+                                <div style="font-weight:700; color:var(--text-primary);"><?= $r['clock_in_time'] ? date('H:i', strtotime($r['clock_in_time'])) . ' WIB' : '-' ?></div>
+                                <span class="badge <?= $r['clock_in_status'] === 'On Time' ? 'badge-on-time' : 'badge-late' ?>" style="font-size:0.7rem;">
                                     <?= $r['clock_in_status'] ?>
                                 </span>
                             </td>
+
+                            <!-- Foto Pulang -->
                             <td>
-                                <?php if ($r['clock_in_lat'] && $r['clock_in_lng']): ?>
-                                    <button class="btn-secondary" style="font-size:0.75rem; padding:4px 8px;" onclick="viewMapModal(<?= $r['clock_in_lat'] ?>, <?= $r['clock_in_lng'] ?>, '<?= addslashes(sanitize($r['clock_in_address'] ?? '')) ?>', '<?= date('d/m/Y', strtotime($r['date'])) ?>')">
-                                        <i class="fas fa-map-marked-alt"></i> Peta
-                                    </button>
+                                <?php if (!empty($r['clock_out_photo'])): ?>
+                                    <img src="<?= $r['clock_out_photo'] ?>" class="img-thumb" onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name=Pulang&background=C5A880&color=181C23';" onclick="viewImageModal('<?= addslashes($r['clock_out_photo']) ?>', 'Foto Selfie Pulang - <?= date('d/m/Y', strtotime($r['date'])) ?>')">
+                                <?php else: ?>
+                                    <span style="color:var(--text-muted); font-size:0.8rem;"><?= $r['clock_out_time'] ? '-' : '<span class="badge badge-late" style="font-size:0.65rem;">Belum Pulang</span>' ?></span>
                                 <?php endif; ?>
+                            </td>
+
+                            <!-- Jam Pulang -->
+                            <td>
+                                <?php if ($r['clock_out_time']): ?>
+                                    <div style="font-weight:700; color:var(--text-primary);"><?= date('H:i', strtotime($r['clock_out_time'])) . ' WIB' ?></div>
+                                    <div style="font-size:0.75rem; color:var(--accent-gold); font-weight:600;"><?= $r['work_duration'] ?: '-' ?></div>
+                                <?php else: ?>
+                                    <span style="color:var(--text-muted); font-size:0.8rem;">--:--</span>
+                                <?php endif; ?>
+                            </td>
+
+                            <td><span class="badge badge-role"><?= sanitize($r['location_type']) ?></span></td>
+
+                            <!-- Peta -->
+                            <td>
+                                <div style="display:flex; gap:4px; flex-wrap:wrap;">
+                                    <?php if ($r['clock_in_lat'] && $r['clock_in_lng']): ?>
+                                        <button class="btn-gold" style="font-size:0.7rem; padding:3px 6px;" onclick="viewMapModal(<?= $r['clock_in_lat'] ?>, <?= $r['clock_in_lng'] ?>, '<?= addslashes(sanitize($r['clock_in_address'] ?? '')) ?>', 'Peta Masuk: <?= date('d/m/Y', strtotime($r['date'])) ?>')">
+                                            Masuk
+                                        </button>
+                                    <?php endif; ?>
+                                    <?php if ($r['clock_out_lat'] && $r['clock_out_lng']): ?>
+                                        <button class="btn-secondary" style="font-size:0.7rem; padding:3px 6px;" onclick="viewMapModal(<?= $r['clock_out_lat'] ?>, <?= $r['clock_out_lng'] ?>, '<?= addslashes(sanitize($r['clock_out_address'] ?? '')) ?>', 'Peta Pulang: <?= date('d/m/Y', strtotime($r['date'])) ?>')">
+                                            Pulang
+                                        </button>
+                                    <?php endif; ?>
+                                </div>
                             </td>
                         </tr>
                     <?php endforeach; ?>

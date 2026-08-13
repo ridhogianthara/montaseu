@@ -115,7 +115,7 @@ if ($export === 'csv') {
     $output = fopen('php://output', 'w');
     fputs($output, $bom = (chr(0xEF) . chr(0xBB) . chr(0xBF)));
 
-    fputcsv($output, ['No', 'Tanggal', 'Nama Karyawan', 'Jabatan', 'Jam Masuk', 'Status Masuk', 'Jam Pulang', 'Durasi Kerja', 'Tipe Lokasi', 'Alamat GPS', 'Catatan Proyek']);
+    fputcsv($output, ['No', 'Tanggal', 'Nama Karyawan', 'Jabatan', 'Jam Masuk', 'Status Masuk', 'Alamat Masuk', 'Catatan Masuk', 'Jam Pulang', 'Durasi Kerja', 'Alamat Pulang', 'Catatan Pulang', 'Tipe Lokasi']);
 
     foreach ($fullRecords as $idx => $r) {
         fputcsv($output, [
@@ -125,11 +125,13 @@ if ($export === 'csv') {
             $r['job_title'],
             $r['clock_in_time'] ? date('H:i:s', strtotime($r['clock_in_time'])) : '-',
             $r['clock_in_status'],
+            $r['clock_in_address'] ?: '-',
+            $r['clock_in_notes'] ?: '-',
             $r['clock_out_time'] ? date('H:i:s', strtotime($r['clock_out_time'])) : '-',
             $r['work_duration'] ?: '-',
-            $r['location_type'],
-            $r['clock_in_address'] ?: '-',
-            $r['clock_in_notes'] ?: '-'
+            $r['clock_out_address'] ?: '-',
+            $r['clock_out_notes'] ?: '-',
+            $r['location_type']
         ]);
     }
     fclose($output);
