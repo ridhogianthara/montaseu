@@ -15,8 +15,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     updateSetting('company_name', $companyName);
     updateSetting('office_address', $officeAddress);
-    updateSetting('office_lat', $officeLat);
-    updateSetting('office_lng', $officeLng);
+    
+    // CRITICAL FIX: Prepend apostrophe to force Google Sheets to treat coordinates as text.
+    // Without this, Google Sheets in Indonesian locale will strip the dot, turning -6.23 into -623 (thousands separator)
+    // which results in millions of kilometers of distance error in Geofencing.
+    updateSetting('office_lat', "'" . $officeLat);
+    updateSetting('office_lng', "'" . $officeLng);
+    
     updateSetting('office_radius', $officeRadius);
     updateSetting('work_start', $workStart);
     updateSetting('work_end', $workEnd);
