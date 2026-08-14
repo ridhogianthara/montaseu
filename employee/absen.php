@@ -45,6 +45,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     elseif ($lat == 0 || $lng == 0 || abs($lat) > 90 || abs($lng) > 180) {
         $error = "Lokasi GPS tidak valid atau terdeteksi manipulasi lokasi (Fake GPS). Harap nyalakan GPS fisik perangkat Anda.";
     } 
+    // Security Check 3: Validasi Geofencing untuk Studio Office
+    elseif ($locationType === 'Studio Office' && calculateDistance($lat, $lng, (float)($settings['office_lat'] ?? 0), (float)($settings['office_lng'] ?? 0)) > (int)($settings['office_radius'] ?? 500)) {
+        $jarak = calculateDistance($lat, $lng, (float)($settings['office_lat'] ?? 0), (float)($settings['office_lng'] ?? 0));
+        $maxJarak = (int)($settings['office_radius'] ?? 500);
+        $error = "Lokasi Anda berada {$jarak} meter dari kantor (di luar batas maksimal {$maxJarak} meter). Anda tidak dapat melakukan absen dengan tipe 'Studio Office HQ'.";
+    }
     else {
         // Store selfie photo as Data URI directly for 100% reliable cross-platform rendering
         $photoPath = $photoData;
@@ -263,6 +269,37 @@ require_once __DIR__ . '/../includes/header.php';
             }
             return false;
         }
+
+        // Validasi 4: Geofencing Radius untuk Studio Office
+        const locType = document.getElementById('location_type').value;
+        if (locType === 'Studio Office') {
+            const officeLat = <?= $settings['office_lat'] ?? 0 ?>;
+            const officeLng = <?= $settings['office_lng'] ?? 0 ?>;
+            const officeRadius = <?= $settings['office_radius'] ?? 500 ?>;
+            
+            const p1 = lat * Math.PI / 180;
+            const p2 = officeLat * Math.PI / 180;
+            const dp = (officeLat - lat) * Math.PI / 180;
+            const dl = (officeLng - lng) * Math.PI / 180;
+            const a = Math.sin(dp/2)*Math.sin(dp/2) + Math.cos(p1)*Math.cos(p2)*Math.sin(dl/2)*Math.sin(dl/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            const distance = Math.round(6371e3 * c);
+            
+            if (distance > officeRadius) {
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Di Luar Jangkauan Kantor',
+                        text: `Lokasi Anda berjarak ${distance} meter dari kantor (Batas maksimal: ${officeRadius} meter). Anda tidak dapat memilih tipe lokasi "Studio Office HQ".`,
+                        background: '#181C23', color: '#F9FAFB'
+                    });
+                } else {
+                    alert(`Lokasi Anda berjarak ${distance} meter dari kantor (Batas maksimal: ${officeRadius} meter). Anda tidak dapat memilih tipe lokasi "Studio Office HQ".`);
+                }
+                return false;
+            }
+        }
+
         return true;
     }
 

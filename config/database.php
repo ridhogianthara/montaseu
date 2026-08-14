@@ -31,20 +31,7 @@ function getWritableDataDir() {
     if (!file_exists($localDataDir)) {
         @mkdir($localDataDir, 0777, true);
     }
-    
-    // Uji apakah direktori lokal dapat ditulis
-    $testFile = $localDataDir . '.test_write_' . md5((string)microtime(true));
-    if (@file_put_contents($testFile, 'test') !== false) {
-        @unlink($testFile);
-        return rtrim(realpath($localDataDir) ?: $localDataDir, '/') . '/';
-    }
-
-    // Fallback otomatis ke /tmp jika direktori project read-only (seperti di Vercel Serverless)
-    $tmpDataDir = sys_get_temp_dir() . '/montaseu_data/';
-    if (!file_exists($tmpDataDir)) {
-        @mkdir($tmpDataDir, 0777, true);
-    }
-    return rtrim($tmpDataDir, '/') . '/';
+    return rtrim(realpath($localDataDir) ?: $localDataDir, '/') . '/';
 }
 
 function getWritableUploadsDir() {
@@ -52,18 +39,7 @@ function getWritableUploadsDir() {
     if (!file_exists($localUploadsDir)) {
         @mkdir($localUploadsDir, 0777, true);
     }
-
-    $testFile = $localUploadsDir . '.test_write_' . md5((string)microtime(true));
-    if (@file_put_contents($testFile, 'test') !== false) {
-        @unlink($testFile);
-        return rtrim(realpath($localUploadsDir) ?: $localUploadsDir, '/') . '/';
-    }
-
-    $tmpUploadsDir = sys_get_temp_dir() . '/montaseu_uploads/';
-    if (!file_exists($tmpUploadsDir)) {
-        @mkdir($tmpUploadsDir, 0777, true);
-    }
-    return rtrim($tmpUploadsDir, '/') . '/';
+    return rtrim(realpath($localUploadsDir) ?: $localUploadsDir, '/') . '/';
 }
 
 define('DATA_DIR', getWritableDataDir());
@@ -83,8 +59,7 @@ function getVaultUsers() {
         DATA_DIR . 'backups/users_latest.json',
         __DIR__ . '/../data/users_vault.json',
         __DIR__ . '/../data/users.json.bak',
-        __DIR__ . '/../data/users.json',
-        sys_get_temp_dir() . '/montaseu_users_vault.json'
+        __DIR__ . '/../data/users.json'
     ];
 
     $allVaultUsers = [];
@@ -140,15 +115,13 @@ function updateVaultWithUsers($users) {
         @mkdir($backupDir, 0777, true);
     }
     @file_put_contents($backupDir . 'users_latest.json', $encoded, LOCK_EX);
-    @file_put_contents(sys_get_temp_dir() . '/montaseu_users_vault.json', $encoded, LOCK_EX);
 }
 
 function removeFromVault($userId, $username = '') {
     $vaultPaths = [
         DATA_DIR . 'users_vault.json',
         DATA_DIR . 'users.json.bak',
-        DATA_DIR . 'backups/users_latest.json',
-        sys_get_temp_dir() . '/montaseu_users_vault.json'
+        DATA_DIR . 'backups/users_latest.json'
     ];
 
     foreach ($vaultPaths as $path) {

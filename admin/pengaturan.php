@@ -40,8 +40,31 @@ $settings = getSettings();
     </div>
 <?php endif; ?>
 
+<style>
+    .settings-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.5rem;
+    }
+    .inner-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+    }
+    @media (max-width: 992px) {
+        .settings-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+    @media (max-width: 576px) {
+        .inner-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
 <form method="POST" action="" id="settings-form">
-    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:1.5rem;">
+    <div class="settings-grid">
         
         <!-- Form Pengaturan -->
         <div class="card-studio">
@@ -59,7 +82,7 @@ $settings = getSettings();
                 <textarea name="office_address" id="office_address" class="form-textarea" rows="2" required placeholder="Tuliskan nama jalan, kota, dan lokasi kantor..."><?= sanitize($settings['office_address'] ?? '') ?></textarea>
             </div>
 
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:1rem;">
+            <div class="inner-grid">
                 <div class="form-group">
                     <label class="form-label">Jam Masuk (Batas On-Time)</label>
                     <input type="time" name="work_start" value="<?= sanitize($settings['work_start'] ?? '08:30') ?>" class="form-input" required>
@@ -76,7 +99,7 @@ $settings = getSettings();
                 <small style="color:var(--text-muted); font-size:0.75rem;">Karyawan di luar radius ini saat presensi Office akan ditandai sebagai Presensi Field / Site Visit.</small>
             </div>
 
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:1rem;">
+            <div class="inner-grid">
                 <div class="form-group">
                     <label class="form-label">Latitude Kantor</label>
                     <input type="text" name="office_lat" id="office_lat" value="<?= sanitize($settings['office_lat'] ?? '-6.230588') ?>" class="form-input" required readonly>
