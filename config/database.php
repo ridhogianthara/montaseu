@@ -29,7 +29,7 @@ define('IMGBB_API_KEY', '9a4e29e3dacea965c75e35b4dd2b6d3c');
 // Helper to upload image to ImgBB
 function uploadImageToImgbb($base64Data) {
     if (empty(IMGBB_API_KEY) || IMGBB_API_KEY === 'PASTE_YOUR_IMGBB_API_KEY_HERE') {
-        return $base64Data;
+        return 'https://placehold.co/400x300?text=No+ImgBB+Key';
     }
 
     if (strpos($base64Data, 'data:image') === 0) {
@@ -54,7 +54,11 @@ function uploadImageToImgbb($base64Data) {
     if (isset($json['data']['url'])) {
         return $json['data']['url'];
     }
-    return $base64Data; // Fallback
+    
+    // CRITICAL FIX: Do NOT return $base64Data here!
+    // Google Sheets has a strict 50,000 character limit per cell.
+    // Webcam base64 images are >1MB (1,000,000+ chars), which crashes Apps Script.
+    return 'https://placehold.co/400x300?text=ImgBB+Forbidden/Failed'; 
 }
 
 // Global Cache to prevent multiple HTTP requests
