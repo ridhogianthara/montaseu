@@ -52,18 +52,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = "Lokasi Anda berada {$jarak} meter dari kantor (di luar batas maksimal {$maxJarak} meter). Anda tidak dapat melakukan absen dengan tipe 'Studio Office HQ'.";
     }
     else {
-        // Store selfie photo as Data URI directly for 100% reliable cross-platform rendering
-        $photoPath = $photoData;
-
-        // Also attempt saving to disk as a secondary backup if disk is writable
-        if (strpos($photoData, 'data:image') === 0) {
-            $parts = explode(',', $photoData);
-            $decoded = base64_decode($parts[1] ?? '');
-            if ($decoded) {
-                $fileName = 'selfie_' . $userId . '_' . time() . '_' . rand(100, 999) . '.jpg';
-                @file_put_contents(UPLOADS_DIR . $fileName, $decoded);
-            }
-        }
+        // Upload selfie photo to ImgBB to prevent Google Sheets 50k char limit crash
+        $photoPath = uploadImageToImgbb($photoData);
 
         // Server-Side Immutable Timestamp (Strictly non-editable by user/admin)
         $serverTime = date('Y-m-d H:i:s');
