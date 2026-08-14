@@ -284,7 +284,22 @@ function deleteUser($id) {
 
 function getAttendances() {
     $data = fetchAllFromGoogle();
-    return $data['attendances'] ?? [];
+    $attendances = $data['attendances'] ?? [];
+    
+    // Normalize Google Sheets ISO dates to local Y-m-d dates
+    foreach ($attendances as &$a) {
+        $recordDateStr = $a['date'] ?? '';
+        if (strpos($recordDateStr, 'T') !== false) {
+            try {
+                $dt = new DateTime($recordDateStr);
+                $dt->setTimezone(new DateTimeZone(date_default_timezone_get() ?: 'Asia/Jakarta'));
+                $a['date'] = $dt->format('Y-m-d');
+            } catch (Exception $e) {
+                $a['date'] = substr($recordDateStr, 0, 10);
+            }
+        }
+    }
+    return $attendances;
 }
 
 function getAttendanceById($id) {
