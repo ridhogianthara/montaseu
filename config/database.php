@@ -135,22 +135,66 @@ function saveToGoogle($action, $data) {
 
 // --- DATA ACCESS API FUNCTIONS ---
 
+function parseCoordinate($coord, $isLng = false) {
+    $coord = str_replace(',', '.', (string)$coord);
+    // If it contains a dot or 'E' (scientific notation), trust PHP's float conversion
+    if (strpos($coord, '.') !== false || strpos(strtolower($coord), 'e') !== false) {
+        return (float)$coord;
+    }
+    
+    $coord = trim(str_replace("'", "", $coord)); // remove prepended apostrophe if any
+    if (empty($coord)) return 0.0;
+    
+    $isNegative = ($coord[0] === '-');
+    $numStr = ltrim($coord, '-');
+    
+    if ($isLng) {
+        if (strlen($numStr) >= 4) {
+            if ($numStr[0] === '9') {
+                $numStr = substr($numStr, 0, 2) . '.' . substr($numStr, 2);
+            } else {
+                $numStr = substr($numStr, 0, 3) . '.' . substr($numStr, 3);
+            }
+        }
+    } else {
+        if (strlen($numStr) >= 2) {
+            $firstTwo = (int)substr($numStr, 0, 2);
+            if ($firstTwo >= 10 && $firstTwo <= 11) {
+                $numStr = substr($numStr, 0, 2) . '.' . substr($numStr, 2);
+            } else {
+                $numStr = substr($numStr, 0, 1) . '.' . substr($numStr, 1);
+            }
+        }
+    }
+    
+    $val = (float)$numStr;
+    return $isNegative ? -$val : $val;
+}
+
 function getSettings() {
     $data = fetchAllFromGoogle();
     $settings = $data['settings'] ?? [];
+    
     if (empty($settings) && GOOGLE_APP_SCRIPT_URL !== 'PASTE_YOUR_GOOGLE_APP_SCRIPT_URL_HERE') {
-        // Fallback default if sheet is empty
         $settings = [
             'company_name' => 'Montaseu Studio',
             'office_address' => 'Jl. Senopati No. 45, Kebayoran Baru, Jakarta Selatan',
-            'office_lat' => '-6.230588',
-            'office_lng' => '106.808018',
-            'office_radius' => '500',
+            'office_lat' => -6.230588,
+            'office_lng' => 106.808018,
+            'office_radius' => 500,
             'work_start' => '08:30',
             'work_end' => '17:30'
         ];
         saveToGoogle('save_settings', $settings);
     }
+
+    if (isset($settings['office_lat'])) {
+        $settings['office_lat'] = parseCoordinate($settings['office_lat'], false);
+    }
+    if (isset($settings['office_lng'])) {
+        $settings['office_lng'] = parseCoordinate($settings['office_lng'], true);
+    }
+
     return $settings;
 }
 
